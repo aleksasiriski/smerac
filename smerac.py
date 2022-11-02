@@ -159,6 +159,7 @@ async def updateCalendar(channel, calendar_url, delay):
                         week["sat"].append(event)
                     elif dayInWeek(start_date.weekday()) == "sun":
                         week["sun"].append(event)
+            await channel.purge()
             for weekday in week:
                 if week[weekday] != []:
                     week[weekday].sort(key=sortByDateTime)
@@ -173,7 +174,7 @@ async def updateCalendar(channel, calendar_url, delay):
                         day_output += summary + "\n"
                         day_output += "**" + start_time + "** - " + end_time + "\n"
                     day_output += "\n" + SPACER
-                    await channel.send(day_output, delete_after=delay)
+                    await channel.send(day_output)
         await asyncio.sleep(delay)
 
 client.run(TOKEN)
