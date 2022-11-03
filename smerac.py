@@ -1,10 +1,8 @@
-SPACER = "-------------------------"
-UNIDENTIFIED_HOURS=1
-CALENDAR_HOURS=12
-
 import os
 
-TOKEN = os.getenv("DISCORD_TOKEN")
+UNIDENTIFIED_HOURS = os.getenv("UNIDENTIFIED_HOURS")
+CALENDAR_HOURS = os.getenv("CALENDAR_HOURS")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 NUMBER_OF_ROLES = int(os.getenv("NUMBER_OF_ROLES"))
 roles = []
 for i in range(0,NUMBER_OF_ROLES):
@@ -126,6 +124,7 @@ async def calendar(delay):
                             asyncio.create_task(updateCalendar(channel, calendar_url, delay))
 
 async def updateCalendar(channel, calendar_url, delay):
+    spacer = "-------------------------"
     calendar_old = {}
     while True:
         current_date = date.today()
@@ -163,7 +162,7 @@ async def updateCalendar(channel, calendar_url, delay):
             for weekday in week:
                 if week[weekday] != []:
                     week[weekday].sort(key=sortByDateTime)
-                    day_output = SPACER
+                    day_output = spacer
                     day_output += "\n\n**" + dayInWeekSrpski(weekday) + ":**\n\n"
                     for event in week[weekday]:
                         summary = event["summary"]
@@ -173,8 +172,8 @@ async def updateCalendar(channel, calendar_url, delay):
                         end_time = end_datetime.strftime("%H:%M")
                         day_output += summary + "\n"
                         day_output += "**" + start_time + "** - " + end_time + "\n"
-                    day_output += "\n" + SPACER
+                    day_output += "\n" + spacer
                     await channel.send(day_output)
         await asyncio.sleep(delay)
 
-client.run(TOKEN)
+client.run(DISCORD_TOKEN)

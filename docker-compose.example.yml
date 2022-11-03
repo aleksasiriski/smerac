@@ -4,6 +4,8 @@ services:
     image: ghcr.io/aleksasiriski/smerac:latest
     environment:
       - TZ=Europe/Berlin
+      - UNIDENTIFIED_HOURS=${UNIDENTIFIED_HOURS:-1}
+      - CALENDAR_HOURS=${CALENDAR_HOURS:-3}
       - DISCORD_TOKEN=${DISCORD_TOKEN:-changeme}
       - NUMBER_OF_ROLES=${NUMBER_OF_ROLES:-2}
       - ROLE_1=${ROLE_1:-IT}
