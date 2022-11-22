@@ -176,4 +176,5 @@ async def updateCalendar(channel, calendar_url, delay):
                     await channel.send(day_output)
         await asyncio.sleep(delay)
 
-client.run(DISCORD_TOKEN)
+if __name__ == "__main__":
+    client.run(DISCORD_TOKEN)
