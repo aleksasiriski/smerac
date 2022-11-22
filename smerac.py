@@ -5,8 +5,8 @@ CALENDAR_HOURS = os.getenv("CALENDAR_HOURS")
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 NUMBER_OF_ROLES = int(os.getenv("NUMBER_OF_ROLES"))
 roles = []
-for i in range(0,NUMBER_OF_ROLES):
-    role = os.getenv("ROLE_" + str(i+1))
+for i in range(NUMBER_OF_ROLES):
+    role = os.getenv("ROLE_%s"%(str(i+1)))
     roles.append(role)
 
 import asyncio, discord
@@ -74,16 +74,26 @@ async def unidentified(delay):
     for guild in client.guilds:
         for channel in guild.channels:
             if channel.name == "unidentified":
-                await channel.purge()
                 asyncio.create_task(spamToJoin(channel, "@everyone Idite u kanal #smerovi i odaberite smer.", delay))
 
 async def spamToJoin(channel, msg, delay):
-    while(True):
+    await channel.purge()
+    while True:
         await channel.send(msg, delete_after=delay)
         await asyncio.sleep(delay)
 
 import requests, json
 from datetime import *
+
+async def calendar(delay):
+    for guild in client.guilds:
+        for category in guild.categories:
+            if category.name == "calendar":
+                for channel in category.channels:
+                    for role in roles:
+                        if role.lower() == channel.name.lower():
+                            calendar_url = os.getenv("CALENDAR_URL_" + role)
+                            asyncio.create_task(updateCalendar(channel, calendar_url, delay))
 
 def dayInWeek(dayInt):
     switcher = {
@@ -112,18 +122,8 @@ def dayInWeekSrpski(day):
 def sortByDateTime(event):
     return datetime.fromisoformat(event["start"]["dateTime"])
 
-async def calendar(delay):
-    for guild in client.guilds:
-        for category in guild.categories:
-            if category.name == "calendar":
-                for channel in category.channels:
-                    for role in roles:
-                        if role.lower() == channel.name.lower():
-                            await channel.purge()
-                            calendar_url = os.getenv("CALENDAR_URL_" + role)
-                            asyncio.create_task(updateCalendar(channel, calendar_url, delay))
-
 async def updateCalendar(channel, calendar_url, delay):
+    await channel.purge()
     spacer = "-------------------------"
     calendar_old = {}
     while True:
