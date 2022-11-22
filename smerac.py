@@ -122,46 +122,75 @@ def dayInWeekSrpski(day):
 def sortByDateTime(event):
     return datetime.fromisoformat(event["start"]["dateTime"])
 
+def isSameWeek(week, week_old):
+    for weekday in week:
+        if week[weekday] != week_old[weekday]:
+            if len(week[weekday]) != len(week_old[weekday]):
+                return False
+
+            for i in range(len(week[weekday])):
+                event = week[weekday][dayInWeek(i)]
+                event_old = week_old[weekday][dayInWeek(i)]
+
+                if event != event_old:
+                    if event.summary != event_old.summary:
+                        return False
+
+                    start_datetime = datetime.fromisoformat(event["start"]["dateTime"])
+                    start_datetime_old = datetime.fromisoformat(event_old["start"]["dateTime"])
+                    start_time = start_datetime.time()
+                    start_time_old = start_datetime_old.time()
+
+                    if start_time != start_time_old:
+                        return False
+
+                    end_datetime = datetime.fromisoformat(event["end"]["dateTime"])
+                    end_datetime_old = datetime.fromisoformat(event_old["end"]["dateTime"])
+                    end_time = end_datetime.time()
+                    end_time_old = end_datetime_old.time()
+
+                    if end_time != end_time_old:
+                        return False
+    return True
+
 async def updateCalendar(channel, calendar_url, delay):
     await channel.purge()
     spacer = "-------------------------"
-    calendar_old = {}
+    week_old = dict()
+
     while True:
         current_date = date.today()
         calendar = json.loads(requests.get(calendar_url).text)
-        if calendar != calendar_old:
-            calendar_old = calendar
-            week = {
-                "mon": [],
-                "tue": [],
-                "wed": [],
-                "thu": [],
-                "fri": [],
-                "sat": [],
-                "sun": []
-            }
-            for event in calendar["items"]:
-                start_datetime = datetime.fromisoformat(event["start"]["dateTime"])
-                start_date = start_datetime.date()
-                if (start_date >= current_date) and (start_date < current_date + timedelta(days=7)):
-                    if dayInWeek(start_date.weekday()) == "mon":
-                        week["mon"].append(event)
-                    elif dayInWeek(start_date.weekday()) == "tue":
-                        week["tue"].append(event)
-                    elif dayInWeek(start_date.weekday()) == "wed":
-                        week["wed"].append(event)
-                    elif dayInWeek(start_date.weekday()) == "thu":
-                        week["thu"].append(event)
-                    elif dayInWeek(start_date.weekday()) == "fri":
-                        week["fri"].append(event)
-                    elif dayInWeek(start_date.weekday()) == "sat":
-                        week["sat"].append(event)
-                    elif dayInWeek(start_date.weekday()) == "sun":
-                        week["sun"].append(event)
+
+        week = {"mon": [],"tue": [],"wed": [],"thu": [],"fri": [],"sat": [],"sun": []}
+        for event in calendar["items"]:
+            start_datetime = datetime.fromisoformat(event["start"]["dateTime"])
+            start_date = start_datetime.date()
+            if (start_date >= current_date) and (start_date < current_date + timedelta(days=7)):
+                if dayInWeek(start_date.weekday()) == "mon":
+                    week["mon"].append(event)
+                elif dayInWeek(start_date.weekday()) == "tue":
+                    week["tue"].append(event)
+                elif dayInWeek(start_date.weekday()) == "wed":
+                    week["wed"].append(event)
+                elif dayInWeek(start_date.weekday()) == "thu":
+                    week["thu"].append(event)
+                elif dayInWeek(start_date.weekday()) == "fri":
+                    week["fri"].append(event)
+                elif dayInWeek(start_date.weekday()) == "sat":
+                    week["sat"].append(event)
+                elif dayInWeek(start_date.weekday()) == "sun":
+                    week["sun"].append(event)
+        
+        for weekday in week:
+            if week[weekday] != []:
+                week[weekday].sort(key=sortByDateTime)
+
+        if week_old == dict() or not isSameWeek(week, week_old):
+            week_old = week
             await channel.purge()
             for weekday in week:
                 if week[weekday] != []:
-                    week[weekday].sort(key=sortByDateTime)
                     day_output = spacer
                     day_output += "\n\n**" + dayInWeekSrpski(weekday) + ":**\n\n"
                     for event in week[weekday]:
@@ -174,6 +203,7 @@ async def updateCalendar(channel, calendar_url, delay):
                         day_output += "**" + start_time + "** - " + end_time + "\n"
                     day_output += "\n" + spacer
                     await channel.send(day_output)
+
         await asyncio.sleep(delay)
 
 if __name__ == "__main__":
