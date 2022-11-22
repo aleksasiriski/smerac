@@ -1,7 +1,14 @@
 import os
 
 UNIDENTIFIED_HOURS = os.getenv("UNIDENTIFIED_HOURS")
+if UNIDENTIFIED_HOURS == None:
+    UNIDENTIFIED_HOURS = 1
 CALENDAR_HOURS = os.getenv("CALENDAR_HOURS")
+if CALENDAR_HOURS == None:
+    CALENDAR_HOURS = 3
+SAVED_PLOTS = os.getenv("SAVED_PLOTS")
+if SAVED_PLOTS == None:
+    SAVED_PLOTS = "/config/savedplots"
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 NUMBER_OF_ROLES = int(os.getenv("NUMBER_OF_ROLES"))
 roles = []
@@ -203,8 +210,35 @@ async def updateCalendar(channel, calendar_url, delay):
                         day_output += "**" + start_time + "** - " + end_time + "\n"
                     day_output += "\n" + spacer
                     await channel.send(day_output)
+            await channel.send(file = await classesPerDayGraph(channel.name, week))
 
         await asyncio.sleep(delay)
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+async def classesPerDayGraph(channel_name, week):
+    filename = SAVED_PLOTS + "/" + channel_name + ".png"
+    data = dict()
+
+    for weekday in week:
+        data[dayInWeekSrpski(weekday)] = len(week[weekday])
+
+    keys = list(data.keys())
+    values = list(data.values())
+
+    fig = plt.figure(figsize = (10, 5))
+
+    plt.bar(keys, values, color ='maroon', width = 0.2)
+
+    plt.xlabel("Dani")
+    plt.ylabel("Broj časova")
+    plt.title("Broj časova po danu.")
+
+    plt.savefig(filename)
+    plt.close()
+
+    return discord.File(filename)
 
 if __name__ == "__main__":
     client.run(DISCORD_TOKEN)

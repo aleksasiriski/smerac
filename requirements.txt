@@ -1,3 +1,5 @@
 asyncio
 discord.py
 requests
+numpy
+matplotlib
