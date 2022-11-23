@@ -196,18 +196,28 @@ async def updateCalendar(channel, calendar_url, delay):
         if week_old == dict() or not isSameWeek(week, week_old):
             week_old = week
             await channel.purge()
+            week_output = dict()
+
             for weekday in week:
                 if week[weekday] != []:
-                    day_output = spacer
-                    day_output += "\n\n**" + dayInWeekSrpski(weekday) + ":**\n\n"
                     for event in week[weekday]:
                         summary = event["summary"]
                         start_datetime = datetime.fromisoformat(event["start"]["dateTime"])
                         start_time = start_datetime.strftime("%H:%M")
                         end_datetime = datetime.fromisoformat(event["end"]["dateTime"])
                         end_time = end_datetime.strftime("%H:%M")
-                        day_output += summary + "\n"
-                        day_output += "**" + start_time + "** - " + end_time + "\n"
+
+                        week_output[weekday][summary]["start_time"].append(start_time)
+                        week_output[weekday][summary]["end_time"].append(end_time)
+
+            for weekday in week:
+                if week[weekday] != []:
+                    day_output = spacer
+                    day_output += "\n\n**" + dayInWeekSrpski(weekday) + ":**\n\n"
+                    for event_summary in week_output[weekday]:
+                        day_output += event_summary + "\n"
+                        for start_time in week_output[weekday][event_summary]:
+                            day_output += "**" + start_time + "** - " + end_time + "\n"
                     day_output += "\n" + spacer
                     await channel.send(day_output)
             await channel.send(file = await classesPerDayGraph(channel.name, week))
