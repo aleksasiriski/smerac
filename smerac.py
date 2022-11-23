@@ -196,7 +196,7 @@ async def updateCalendar(channel, calendar_url, delay):
         if week_old == dict() or not isSameWeek(week, week_old):
             week_old = week
             await channel.purge()
-            week_output = dict()
+            week_output = {"mon": [],"tue": [],"wed": [],"thu": [],"fri": [],"sat": [],"sun": []}
 
             for weekday in week:
                 if week[weekday] != []:
@@ -206,6 +206,11 @@ async def updateCalendar(channel, calendar_url, delay):
                         start_time = start_datetime.strftime("%H:%M")
                         end_datetime = datetime.fromisoformat(event["end"]["dateTime"])
                         end_time = end_datetime.strftime("%H:%M")
+
+                        if week_output[weekday][summary] == None:
+                            week_output[weekday].append(summary)
+                            week_output[weekday][summary]["start_time"] = []
+                            week_output[weekday][summary]["end_time"] = []
 
                         week_output[weekday][summary]["start_time"].append(start_time)
                         week_output[weekday][summary]["end_time"].append(end_time)
