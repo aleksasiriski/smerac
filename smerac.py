@@ -251,7 +251,7 @@ async def updateCalendar(channel, calendar_url, delay):
                     day_output += spacer
                     await channel.send(day_output)
 
-            await channel.send(file = await classesPerDayGraph(channel.name, week))
+            await channel.send(file = await classesPerDayGraph(channel.name, week_output))
 
         await asyncio.sleep(delay)
 
