@@ -161,7 +161,6 @@ def isSameWeek(week, week_old):
     return True
 
 async def updateCalendar(channel, calendar_url, delay):
-    await channel.purge()
     spacer = "-------------------------"
     week_old = dict()
 
@@ -200,24 +199,40 @@ async def updateCalendar(channel, calendar_url, delay):
             for weekday in week:
                 if week[weekday] != []:
                     for event in week[weekday]:
-                        summary = event["summary"]
+                        name, info = event["summary"].split(",", 1)
                         start_datetime = datetime.fromisoformat(event["start"]["dateTime"])
                         start_time = start_datetime.strftime("%H:%M")
                         end_datetime = datetime.fromisoformat(event["end"]["dateTime"])
                         end_time = end_datetime.strftime("%H:%M")
 
-                        found = False
+                        foundEvent = False
                         if week_output[weekday] != []:
                             for event_old in week_output[weekday]:
-                                if summary.lower().replace(" ", "") == event_old["summary"].lower().replace(" ", ""):
-                                    event_old["start_times"].append(start_time)
-                                    event_old["end_times"].append(end_time)
-                                    found = True
+
+                                if name.lower().replace(" ", "") == event_old["name"].lower().replace(" ", ""):
+
+                                    foundInfo = False
+                                    for info_old in event_old["info"]:
+                                        if info.lower().replace(" ", "") == info_old["name"].lower().replace(" ", ""):
+                                            info_old["start_times"].append(start_time)
+                                            info_old["end_times"].append(end_time)
+                                            foundInfo = True
+                                            break
+                                    if not foundInfo:
+                                        new_info = {"name": info, "start_times": [], "end_times": []}
+                                        new_info["start_times"].append(start_time)
+                                        new_info["end_times"].append(end_time)
+                                        event_old["info"].append(new_info)
+
+                                    foundEvent = True
                                     break
-                        if not found:
-                            new_event = {"summary": summary,"start_times": [],"end_times": []}
-                            new_event["start_times"].append(start_time)
-                            new_event["end_times"].append(end_time)
+
+                        if not foundEvent:
+                            new_event = {"name": name, "info": []}
+                            new_info = {"name": info, "start_times": [], "end_times": []}
+                            new_info["start_times"].append(start_time)
+                            new_info["end_times"].append(end_time)
+                            new_event["info"].append(new_info)
                             week_output[weekday].append(new_event)
 
             await channel.purge()
@@ -227,10 +242,11 @@ async def updateCalendar(channel, calendar_url, delay):
                     day_output = spacer
                     day_output += "\n\n**" + dayInWeekSrpski(weekday) + ":**\n\n"
                     for event in week_output[weekday]:
-                        summary = event["summary"]
-                        day_output += "--- " + summary + " ---\n"
-                        for i in range(len(event["start_times"])):
-                            day_output += "**" + event["start_times"][i] + "** - " + event["end_times"][i] + "\n"
+                        day_output += "--- " + event["name"] + " ---\n"
+                        for info in event["info"]:
+                            day_output += info["name"] + "\n"
+                            for i in range(len(info["start_times"])):
+                                day_output += "**" + info["start_times"][i] + "** - " + info["end_times"][i] + "\n"
                         day_output += "\n"
                     day_output += spacer
                     await channel.send(day_output)
