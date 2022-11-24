@@ -195,7 +195,6 @@ async def updateCalendar(channel, calendar_url, delay):
 
         if week_old == dict() or not isSameWeek(week, week_old):
             week_old = week
-            await channel.purge()
             week_output = {"mon": [],"tue": [],"wed": [],"thu": [],"fri": [],"sat": [],"sun": []}
 
             for weekday in week:
@@ -207,24 +206,35 @@ async def updateCalendar(channel, calendar_url, delay):
                         end_datetime = datetime.fromisoformat(event["end"]["dateTime"])
                         end_time = end_datetime.strftime("%H:%M")
 
-                        if week_output[weekday][summary] == None:
-                            week_output[weekday].append(summary)
-                            week_output[weekday][summary]["start_time"] = []
-                            week_output[weekday][summary]["end_time"] = []
+                        found = False
+                        if week_output[weekday] != []:
+                            for event_old in week_output[weekday]:
+                                if summary.lower().replace(" ", "") == event_old["summary"].lower().replace(" ", ""):
+                                    event_old["start_times"].append(start_time)
+                                    event_old["end_times"].append(end_time)
+                                    found = True
+                                    break
+                        if not found:
+                            new_event = {"summary": summary,"start_times": [],"end_times": []}
+                            new_event["start_times"].append(start_time)
+                            new_event["end_times"].append(end_time)
+                            week_output[weekday].append(new_event)
 
-                        week_output[weekday][summary]["start_time"].append(start_time)
-                        week_output[weekday][summary]["end_time"].append(end_time)
+            await channel.purge()
 
-            for weekday in week:
-                if week[weekday] != []:
+            for weekday in week_output:
+                if week_output[weekday] != []:
                     day_output = spacer
                     day_output += "\n\n**" + dayInWeekSrpski(weekday) + ":**\n\n"
-                    for event_summary in week_output[weekday]:
-                        day_output += event_summary + "\n"
-                        for start_time in week_output[weekday][event_summary]:
-                            day_output += "**" + start_time + "** - " + end_time + "\n"
-                    day_output += "\n" + spacer
+                    for event in week_output[weekday]:
+                        summary = event["summary"]
+                        day_output += "--- " + summary + " ---\n"
+                        for i in range(len(event["start_times"])):
+                            day_output += "**" + event["start_times"][i] + "** - " + event["end_times"][i] + "\n"
+                        day_output += "\n"
+                    day_output += spacer
                     await channel.send(day_output)
+
             await channel.send(file = await classesPerDayGraph(channel.name, week))
 
         await asyncio.sleep(delay)
