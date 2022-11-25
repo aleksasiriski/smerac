@@ -67,7 +67,14 @@
 \cfoot{\thepage}
 
 \section{Uvod}
-test\cite{revos}
+\subsection{Discord}
+Discord\cite{discord}, kao jedna od najpopularnijih društvenih mreža za programere i entuzijaste računarskih tehnologija, je logičan izbor za razmenu informacija i raspoređivanje časova IT i RN smerova Univerziteta u Novom Sadu. Uprkos jednostavnosti Discord-ovog grafičkog interfejsa nije lako omogućiti studentima da sami sebi određuju smer a integracija sa Google kalendarom je apsolutno neizvodljiva. Na sreću, Discord tim je osposobio trećim licima da lako kreiraju 'Bot' naloge i uz pomoć njihovog REST api će nastati Smerač - Discord Bot stvoren da omogući studentima izbor sopstvenog smera kao i integraciju Google kalendara u prostom Discord chat-u.
+\subsection{Python}
+Smerač je Python\cite{python} skripta napisana u svega 400 linija koda. Računajući da korisnicima nije bitno da li će im smer biti dodeljen za 1ms ili 1s Python je bio prikladan izvor. Najpre zbog mnogobrojnih ugrađenih biblioteka i modula, kao što su discordpy\cite{discordpy} i asyncio\cite{asyncio}, ali i zbog jednostavne sintakse koja je omogućila eksponencijalan razvoj ovog programa.
+\subsection{Ideja}
+Discord bot koji mora biti dovoljno jednostavan ali isto tako i univerzalno programiran da se može lako primeniti na više različitih okruženja (Discord servera). Takva prilagodljivost se postiže pametnim planiranjem toka rada programa i korišćenjem promenljivih okruženja (eng. \textit{environment variables}). Takođe je jako bitna licenca koja će se koristiti, da ne bi došlo do krađe autorskih prava i zloupotrebe softvera. Tačno iz tih razloga odabrana licenca za Smerač će biti GNU General Public License\cite{gpl}.
+\subsection{Asinhrono izvođenje programa}
+Da bi program uopšte mogao paralelno čitati poruke različitih korisnika potrebno je pozivanje novih niti za.....
 \newpage
 
 \section{Opis programa}
