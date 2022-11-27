@@ -103,62 +103,39 @@ async def calendar(delay):
                             asyncio.create_task(updateCalendar(channel, calendar_url, delay))
 
 def dayInWeek(dayInt):
-    switcher = {
-        0: "mon",
-        1: "tue",
-        2: "wed",
-        3: "thu",
-        4: "fri",
-        5: "sat",
-        6: "sun"
-    }
+    switcher = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}
     return switcher.get(dayInt, "Error!")
 
 def dayInWeekSrpski(day):
-    switcher = {
-        "mon": "Ponedeljak",
-        "tue": "Utorak",
-        "wed": "Sreda",
-        "thu": "Četvrtak",
-        "fri": "Petak",
-        "sat": "Subota",
-        "sun": "Nedelja"
-    }
+    switcher = {"mon": "Ponedeljak", "tue": "Utorak", "wed": "Sreda", "thu": "Četvrtak", "fri": "Petak", "sat": "Subota", "sun": "Nedelja"}
     return switcher.get(day, "Error!")
 
-def sortByDateTime(event):
-    return datetime.fromisoformat(event["start"]["dateTime"])
+def generateWeek(events):
+    week = {"mon": [], "tue": [], "wed": [], "thu": [], "fri": [], "sat": [], "sun": []}
 
-def isSameWeek(week, week_old):
+    for event in events:
+        start_datetime = datetime.fromisoformat(event["start"]["dateTime"])
+        start_date = start_datetime.date()
+        if (start_date >= current_date) and (start_date < current_date + timedelta(days=7)):
+            if dayInWeek(start_date.weekday()) == "mon":
+                week["mon"].append(event)
+            elif dayInWeek(start_date.weekday()) == "tue":
+                week["tue"].append(event)
+            elif dayInWeek(start_date.weekday()) == "wed":
+                week["wed"].append(event)
+            elif dayInWeek(start_date.weekday()) == "thu":
+                week["thu"].append(event)
+            elif dayInWeek(start_date.weekday()) == "fri":
+                week["fri"].append(event)
+            elif dayInWeek(start_date.weekday()) == "sat":
+                week["sat"].append(event)
+            elif dayInWeek(start_date.weekday()) == "sun":
+                week["sun"].append(event)
+
     for weekday in week:
-        if week[weekday] != week_old[weekday]:
-            if len(week[weekday]) != len(week_old[weekday]):
-                return False
+        week[weekday].sort(key = lambda event : datetime.fromisoformat(event["start"]["dateTime"]))
 
-            for i in range(len(week[weekday])):
-                event = week[weekday][dayInWeek(i)]
-                event_old = week_old[weekday][dayInWeek(i)]
-
-                if event != event_old:
-                    if event.summary != event_old.summary:
-                        return False
-
-                    start_datetime = datetime.fromisoformat(event["start"]["dateTime"])
-                    start_datetime_old = datetime.fromisoformat(event_old["start"]["dateTime"])
-                    start_time = start_datetime.time()
-                    start_time_old = start_datetime_old.time()
-
-                    if start_time != start_time_old:
-                        return False
-
-                    end_datetime = datetime.fromisoformat(event["end"]["dateTime"])
-                    end_datetime_old = datetime.fromisoformat(event_old["end"]["dateTime"])
-                    end_time = end_datetime.time()
-                    end_time_old = end_datetime_old.time()
-
-                    if end_time != end_time_old:
-                        return False
-    return True
+    return week
 
 async def updateCalendar(channel, calendar_url, delay):
     spacer = "-------------------------"
@@ -168,90 +145,68 @@ async def updateCalendar(channel, calendar_url, delay):
         current_date = date.today()
         calendar = json.loads(requests.get(calendar_url).text)
 
+        week_data = generateWeek(calendar["items"])
         week = {"mon": [],"tue": [],"wed": [],"thu": [],"fri": [],"sat": [],"sun": []}
-        for event in calendar["items"]:
-            start_datetime = datetime.fromisoformat(event["start"]["dateTime"])
-            start_date = start_datetime.date()
-            if (start_date >= current_date) and (start_date < current_date + timedelta(days=7)):
-                if dayInWeek(start_date.weekday()) == "mon":
-                    week["mon"].append(event)
-                elif dayInWeek(start_date.weekday()) == "tue":
-                    week["tue"].append(event)
-                elif dayInWeek(start_date.weekday()) == "wed":
-                    week["wed"].append(event)
-                elif dayInWeek(start_date.weekday()) == "thu":
-                    week["thu"].append(event)
-                elif dayInWeek(start_date.weekday()) == "fri":
-                    week["fri"].append(event)
-                elif dayInWeek(start_date.weekday()) == "sat":
-                    week["sat"].append(event)
-                elif dayInWeek(start_date.weekday()) == "sun":
-                    week["sun"].append(event)
-        
-        for weekday in week:
-            if week[weekday] != []:
-                week[weekday].sort(key=sortByDateTime)
 
-        if week_old == dict() or not isSameWeek(week, week_old):
-            week_old = week
-            week_output = {"mon": [],"tue": [],"wed": [],"thu": [],"fri": [],"sat": [],"sun": []}
+        for weekday in week_data:
+            if week_data[weekday] != []:
+                for event in week_data[weekday]:
+                    name, info = event["summary"].split(",", 1)
+                    start_datetime = datetime.fromisoformat(event["start"]["dateTime"])
+                    start_time = start_datetime.strftime("%H:%M")
+                    end_datetime = datetime.fromisoformat(event["end"]["dateTime"])
+                    end_time = end_datetime.strftime("%H:%M")
 
-            for weekday in week:
-                if week[weekday] != []:
-                    for event in week[weekday]:
-                        name, info = event["summary"].split(",", 1)
-                        start_datetime = datetime.fromisoformat(event["start"]["dateTime"])
-                        start_time = start_datetime.strftime("%H:%M")
-                        end_datetime = datetime.fromisoformat(event["end"]["dateTime"])
-                        end_time = end_datetime.strftime("%H:%M")
+                    foundEvent = False
+                    if week[weekday] != []:
+                        for event_old in week[weekday]:
 
-                        foundEvent = False
-                        if week_output[weekday] != []:
-                            for event_old in week_output[weekday]:
+                            if name.lower().replace(" ", "") == event_old["name"].lower().replace(" ", ""):
 
-                                if name.lower().replace(" ", "") == event_old["name"].lower().replace(" ", ""):
+                                foundInfo = False
+                                for info_old in event_old["info"]:
+                                    if info.lower().replace(" ", "") == info_old["name"].lower().replace(" ", ""):
+                                        info_old["start_times"].append(start_time)
+                                        info_old["end_times"].append(end_time)
+                                        foundInfo = True
+                                        break
+                                if not foundInfo:
+                                    new_info = {"name": info, "start_times": [], "end_times": []}
+                                    new_info["start_times"].append(start_time)
+                                    new_info["end_times"].append(end_time)
+                                    event_old["info"].append(new_info)
 
-                                    foundInfo = False
-                                    for info_old in event_old["info"]:
-                                        if info.lower().replace(" ", "") == info_old["name"].lower().replace(" ", ""):
-                                            info_old["start_times"].append(start_time)
-                                            info_old["end_times"].append(end_time)
-                                            foundInfo = True
-                                            break
-                                    if not foundInfo:
-                                        new_info = {"name": info, "start_times": [], "end_times": []}
-                                        new_info["start_times"].append(start_time)
-                                        new_info["end_times"].append(end_time)
-                                        event_old["info"].append(new_info)
+                                foundEvent = True
+                                break
 
-                                    foundEvent = True
-                                    break
+                    if not foundEvent:
+                        new_event = {"name": name, "info": []}
+                        new_info = {"name": info, "start_times": [], "end_times": []}
+                        new_info["start_times"].append(start_time)
+                        new_info["end_times"].append(end_time)
+                        new_event["info"].append(new_info)
+                        week[weekday].append(new_event)
 
-                        if not foundEvent:
-                            new_event = {"name": name, "info": []}
-                            new_info = {"name": info, "start_times": [], "end_times": []}
-                            new_info["start_times"].append(start_time)
-                            new_info["end_times"].append(end_time)
-                            new_event["info"].append(new_info)
-                            week_output[weekday].append(new_event)
+            if week_old == dict() or week_old != week:
+                week_old = week
+                
+                await channel.purge()
 
-            await channel.purge()
+                for weekday in week:
+                    if week[weekday] != []:
+                        day_output = spacer
+                        day_output += "\n\n**" + dayInWeekSrpski(weekday) + ":**\n\n"
+                        for event in week[weekday]:
+                            day_output += "--- " + event["name"] + " ---\n"
+                            for info in event["info"]:
+                                day_output += info["name"] + "\n"
+                                for i in range(len(info["start_times"])):
+                                    day_output += "**" + info["start_times"][i] + "** - " + info["end_times"][i] + "\n"
+                            day_output += "\n"
+                        day_output += spacer
+                        await channel.send(day_output)
 
-            for weekday in week_output:
-                if week_output[weekday] != []:
-                    day_output = spacer
-                    day_output += "\n\n**" + dayInWeekSrpski(weekday) + ":**\n\n"
-                    for event in week_output[weekday]:
-                        day_output += "--- " + event["name"] + " ---\n"
-                        for info in event["info"]:
-                            day_output += info["name"] + "\n"
-                            for i in range(len(info["start_times"])):
-                                day_output += "**" + info["start_times"][i] + "** - " + info["end_times"][i] + "\n"
-                        day_output += "\n"
-                    day_output += spacer
-                    await channel.send(day_output)
-
-            await channel.send(file = await classesPerDayGraph(channel.name, week_output))
+                await channel.send(file = await classesPerDayGraph(channel.name, week))
 
         await asyncio.sleep(delay)
 
