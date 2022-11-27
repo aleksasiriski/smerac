@@ -115,8 +115,7 @@ def generateWeek(events):
     week = {"mon": [], "tue": [], "wed": [], "thu": [], "fri": [], "sat": [], "sun": []}
 
     for event in events:
-        start_datetime = datetime.fromisoformat(event["start"]["dateTime"])
-        start_date = start_datetime.date()
+        start_date = datetime.fromisoformat(event["start"]["dateTime"]).date()
         if (start_date >= current_date) and (start_date < current_date + timedelta(days=7)):
             if dayInWeek(start_date.weekday()) == "mon":
                 week["mon"].append(event)
@@ -139,7 +138,7 @@ def generateWeek(events):
     return week
 
 def parseWeek(week_data):
-    week = {"mon": [],"tue": [],"wed": [],"thu": [],"fri": [],"sat": [],"sun": []}
+    week = {"mon": [], "tue": [], "wed": [], "thu": [], "fri": [], "sat": [], "sun": []}
 
     for weekday in week_data:
         if week_data[weekday] != []:
