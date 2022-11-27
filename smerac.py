@@ -110,7 +110,7 @@ def dayInWeekSrpski(day):
     switcher = {"mon": "Ponedeljak", "tue": "Utorak", "wed": "Sreda", "thu": "Četvrtak", "fri": "Petak", "sat": "Subota", "sun": "Nedelja"}
     return switcher.get(day, "Error!")
 
-def generateWeek(events):
+async def generateWeek(events):
     current_date = date.today()
     week = {"mon": [], "tue": [], "wed": [], "thu": [], "fri": [], "sat": [], "sun": []}
 
@@ -137,7 +137,7 @@ def generateWeek(events):
 
     return week
 
-def parseWeek(week_data):
+async def parseWeek(week_data):
     week = {"mon": [], "tue": [], "wed": [], "thu": [], "fri": [], "sat": [], "sun": []}
 
     for weekday in week_data:
@@ -186,8 +186,8 @@ async def updateCalendar(channel, calendar_url, delay):
     while True:
         calendar = json.loads(requests.get(calendar_url).text)
 
-        week_data = generateWeek(calendar["items"])
-        week = parseWeek(week_data)
+        week_data = await generateWeek(calendar["items"])
+        week = await parseWeek(week_data)
 
         if week_old == dict() or week_old != week:
             week_old = week
