@@ -111,6 +111,7 @@ def dayInWeekSrpski(day):
     return switcher.get(day, "Error!")
 
 def generateWeek(events):
+    current_date = date.today()
     week = {"mon": [], "tue": [], "wed": [], "thu": [], "fri": [], "sat": [], "sun": []}
 
     for event in events:
@@ -184,7 +185,6 @@ async def updateCalendar(channel, calendar_url, delay):
     week_old = dict()
 
     while True:
-        current_date = date.today()
         calendar = json.loads(requests.get(calendar_url).text)
 
         week_data = generateWeek(calendar["items"])
