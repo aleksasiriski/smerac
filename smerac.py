@@ -189,7 +189,11 @@ async def updateCalendar(channel, calendar_url, delay):
         week_data = await generateWeek(calendar["items"])
         week = await parseWeek(week_data)
 
-        if week_old == dict() or week_old != week:
+        if week_old != week:
+            print("week_old\n\n")
+            print(week_old)
+            print("week\n\n")
+            print(week)
             week_old = week
 
             await channel.purge()
