@@ -56,7 +56,7 @@ async def on_message(message):
     if user == client.user:
         return
 
-    if content.startswith("!smer"):
+    if content.startswith("/smer"):
         wanted_role = "null"
         discord_roles = []
 
