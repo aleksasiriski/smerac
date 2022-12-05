@@ -1,20 +1,35 @@
 import os
 
+def fail(msg):
+    print(msg)
+    exit(1)
+
 UNIDENTIFIED_HOURS = os.getenv("UNIDENTIFIED_HOURS")
 if UNIDENTIFIED_HOURS == None:
     UNIDENTIFIED_HOURS = 1
+
 CALENDAR_HOURS = os.getenv("CALENDAR_HOURS")
 if CALENDAR_HOURS == None:
     CALENDAR_HOURS = 3
+
 SAVED_PLOTS = os.getenv("SAVED_PLOTS")
 if SAVED_PLOTS == None:
     SAVED_PLOTS = "/config/savedplots"
+
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+if DISCORD_TOKEN == None:
+    fail("DISCORD_TOKEN env isn't set")
+
 NUMBER_OF_ROLES = int(os.getenv("NUMBER_OF_ROLES"))
+if NUMBER_OF_ROLES == None:
+    fail("NUMBER_OF_ROLES env isn't set")
+
 roles = []
 for i in range(NUMBER_OF_ROLES):
-    role = os.getenv("ROLE_%s"%(str(i+1)))
-    roles.append(role)
+    ROLE = os.getenv("ROLE_" + str(i+1))
+    if ROLE == None:
+        fail("ROLE_%s env isn't set"%(str(i+1)))
+    roles.append(ROLE)
 
 import asyncio, discord
 
@@ -99,8 +114,11 @@ async def calendar(delay):
                 for channel in category.channels:
                     for role in roles:
                         if role.lower() == channel.name.lower():
-                            calendar_url = os.getenv("CALENDAR_URL_" + role)
-                            asyncio.create_task(updateCalendar(channel, calendar_url, delay))
+                            CALENDAR_URL = os.getenv("CALENDAR_URL_" + role)
+                            if CALENDAR_URL == None:
+                                print("CALENDAR_URL_%s env isn't set, skipping."%(role))
+                            else:
+                                asyncio.create_task(updateCalendar(channel, CALENDAR_URL, delay))
 
 def dayInWeek(dayInt):
     switcher = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}

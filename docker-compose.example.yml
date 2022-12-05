@@ -8,11 +8,13 @@ services:
       - CALENDAR_HOURS=${CALENDAR_HOURS:-3}
       - SAVED_PLOTS=${SAVED_PLOTS:-/config/savedplots}
       - DISCORD_TOKEN=${DISCORD_TOKEN:-changeme}
-      - NUMBER_OF_ROLES=${NUMBER_OF_ROLES:-2}
+      - NUMBER_OF_ROLES=${NUMBER_OF_ROLES:-3}
       - ROLE_1=${ROLE_1:-IT}
       - ROLE_2=${ROLE_2:-RN}
+      - ROLE_3=${ROLE_2:-PM}
       - CALENDAR_URL_IT=${CALENDAR_URL:-}
       - CALENDAR_URL_RN=${CALENDAR_URL:-}
+      - CALENDAR_URL_PM=${CALENDAR_URL:-}
     volumes:
       - smerac-conf:/config:Z
     restart: always
