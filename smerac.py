@@ -304,7 +304,8 @@ async def classesPerDayGraph(channel_name, week):
 if __name__ == "__main__":
     log.info("Starting Smerac!")
 
-    global config = setup()
+    global config
+    config = setup()
     setup_logger()
 
     client.run(config["discord_token"])
