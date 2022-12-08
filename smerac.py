@@ -10,11 +10,10 @@ import matplotlib.pyplot as plt
 from datetime import *
 
 log = logging.getLogger("smerac")
-config = dict()
-
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
+tree = app_commands.CommandTree(client)
 
 def setup_logger(config):
     if os.getenv("DEBUG") == None:
@@ -52,7 +51,7 @@ def setup():
 
     COMMAND = os.getenv("COMMAND")
     if COMMAND == None:
-        COMMAND = "/smer"
+        COMMAND = "smer"
     config["command"] = COMMAND
 
     SAVED_PLOTS = os.getenv("SAVED_PLOTS")
@@ -90,8 +89,7 @@ async def on_ready():
     asyncio.create_task(unidentified(int(config["unidentified_hours"])*3600))
     asyncio.create_task(calendar(config, int(config["calendar_hours"])*3600))
 
-@client.event
-async def on_message(message):
+async def setRole(message):
     config = setup()
     user = message.author
     content = message.content
@@ -134,6 +132,22 @@ async def on_message(message):
         msg = "Wrong command or trying to spam. Please write the command correctly and don't spam this channel."
         await message.channel.send(msg, delete_after=5)
         await message.delete(delay=3)
+
+@client.event
+async def on_message(message):
+    await setRole(message)
+
+@tree.command(name = "smer IT", description = "Set your role to IT") 
+async def slashSetRole(interaction):
+    await setRole("smer IT")
+
+@tree.command(name = "smer RN", description = "Set your role to RN") 
+async def slashSetRole(interaction):
+    await setRole("smer RN")
+
+@tree.command(name = "smer PM", description = "Set your role to PM") 
+async def slashSetRole(interaction):
+    await setRole("smer PM")
 
 async def unidentified(delay):
     for guild in client.guilds:
