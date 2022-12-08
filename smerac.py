@@ -37,7 +37,7 @@ def setup():
 
     LOG_FILE = os.getenv("LOG_FILE")
     if LOG_FILE == None:
-        LOG_FILE = "/config/logs/%s.log"%(datetime.today().strftime())
+        LOG_FILE = "/config/logs/%s.log"%(datetime.today().strftime("%Y/%m/%d-%H:%M:%S"))
     config["log_file"] = LOG_FILE
 
     UNIDENTIFIED_HOURS = os.getenv("UNIDENTIFIED_HOURS")
