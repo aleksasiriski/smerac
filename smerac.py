@@ -32,7 +32,7 @@ def fail(msg):
     print(msg)
     exit(1)
 
-def setup():
+def setup(config):
     config = dict()
 
     LOG_FILE = os.getenv("LOG_FILE")
@@ -86,11 +86,13 @@ async def on_connect():
 @client.event
 async def on_ready():
     log.info("Logged in as " + client.user)
+    config = setup()
     asyncio.create_task(unidentified(int(config["unidentified_hours"])*3600))
-    asyncio.create_task(calendar(int(config["calendar_hours"])*3600))
+    asyncio.create_task(calendar(config, int(config["calendar_hours"])*3600))
 
 @client.event
 async def on_message(message):
+    config = setup()
     user = message.author
     content = message.content
 
@@ -146,7 +148,7 @@ async def spamToJoin(channel, msg, delay):
         await channel.send(msg, delete_after=delay)
         await asyncio.sleep(delay)
 
-async def calendar(delay):
+async def calendar(config, delay):
     for guild in client.guilds:
         for category in guild.categories:
             if category.name == "calendar":
@@ -157,7 +159,7 @@ async def calendar(delay):
                             if CALENDAR_URL == None:
                                 log.info("CALENDAR_URL_%s env isn't set, skipping."%(role))
                             else:
-                                asyncio.create_task(updateCalendar(channel, CALENDAR_URL, delay))
+                                asyncio.create_task(updateCalendar(config, channel, CALENDAR_URL, delay))
 
 def dayInWeek(dayInt):
     switcher = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}
@@ -236,7 +238,7 @@ async def parseWeek(week_data):
     
     return week
 
-async def updateCalendar(channel, calendar_url, delay):
+async def updateCalendar(config, channel, calendar_url, delay):
     spacer = "-------------------------"
     week_old = dict()
 
@@ -274,7 +276,7 @@ async def updateCalendar(channel, calendar_url, delay):
 
                     await channel.send(day_output)
 
-            await channel.send(file = await classesPerDayGraph(channel.name, week))
+            await channel.send(file = await classesPerDayGraph(config, channel.name, week))
 
         await asyncio.sleep(delay)
 
@@ -304,8 +306,7 @@ async def classesPerDayGraph(channel_name, week):
 if __name__ == "__main__":
     log.info("Starting Smerac!")
 
-    global config
     config = setup()
-    setup_logger()
+    setup_logger(config)
 
     client.run(config["discord_token"])
