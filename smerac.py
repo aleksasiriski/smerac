@@ -13,7 +13,7 @@ log = logging.getLogger("smerac")
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
-tree = app_commands.CommandTree(client)
+tree = discord.app_commands.CommandTree(client)
 
 def setup_logger(config):
     if os.getenv("DEBUG") == None:
