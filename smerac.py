@@ -85,7 +85,7 @@ async def on_connect():
 
 @client.event
 async def on_ready():
-    log.info("Logged in as " + client.user)
+    log.info(f"Logged in as {client.user}")
     config = setup()
     asyncio.create_task(unidentified(int(config["unidentified_hours"])*3600))
     asyncio.create_task(calendar(config, int(config["calendar_hours"])*3600))
