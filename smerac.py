@@ -1,42 +1,83 @@
 import os
+import sys
+import logging
+import asyncio
+import discord
+import requests
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+from datetime import *
+
+log = logging.getLogger("smerac")
+config = dict()
+
+intents = discord.Intents.default()
+intents.message_content = True
+client = discord.Client(intents=intents)
+
+def setup_logger():
+    if os.getenv("DEBUG") == None:
+        logging_level = logging.INFO
+    else:
+        logging_level = logging.DEBUG
+
+    logging.basicConfig(
+        filename=config["log_file"],
+        level=logging_level,
+        format="%(asctime)s - %(name)s[%(process)s] - %(levelname)s - %(message)s",
+    )
 
 def fail(msg):
     print(msg)
     exit(1)
 
-UNIDENTIFIED_HOURS = os.getenv("UNIDENTIFIED_HOURS")
-if UNIDENTIFIED_HOURS == None:
-    UNIDENTIFIED_HOURS = 1
+def setup():
+    config = dict()
 
-CALENDAR_HOURS = os.getenv("CALENDAR_HOURS")
-if CALENDAR_HOURS == None:
-    CALENDAR_HOURS = 3
+    LOG_FILE = os.getenv("LOG_FILE")
+    if LOG_FILE == None:
+        LOG_FILE = "/config/logs/%s.log"%(datetime.today().strftime())
+    config["log_file"] = LOG_FILE
 
-SAVED_PLOTS = os.getenv("SAVED_PLOTS")
-if SAVED_PLOTS == None:
-    SAVED_PLOTS = "/config/savedplots"
+    UNIDENTIFIED_HOURS = os.getenv("UNIDENTIFIED_HOURS")
+    if UNIDENTIFIED_HOURS == None:
+        UNIDENTIFIED_HOURS = 1
+    config["unidentified_hours"] = UNIDENTIFIED_HOURS
 
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-if DISCORD_TOKEN == None:
-    fail("DISCORD_TOKEN env isn't set")
+    CALENDAR_HOURS = os.getenv("CALENDAR_HOURS")
+    if CALENDAR_HOURS == None:
+        CALENDAR_HOURS = 3
+    config["calendar_hours"] = CALENDAR_HOURS
 
-NUMBER_OF_ROLES = int(os.getenv("NUMBER_OF_ROLES"))
-if NUMBER_OF_ROLES == None:
-    fail("NUMBER_OF_ROLES env isn't set")
+    COMMAND = os.getenv("COMMAND")
+    if COMMAND == None:
+        COMMAND = "/smer"
+    config["command"] = COMMAND
 
-roles = []
-for i in range(NUMBER_OF_ROLES):
-    ROLE = os.getenv("ROLE_" + str(i+1))
-    if ROLE == None:
-        fail("ROLE_%s env isn't set"%(str(i+1)))
-    roles.append(ROLE)
+    SAVED_PLOTS = os.getenv("SAVED_PLOTS")
+    if SAVED_PLOTS == None:
+        SAVED_PLOTS = "/config/savedplots"
+    config["saved_plots"] = SAVED_PLOTS
 
-import asyncio, discord
+    DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+    if DISCORD_TOKEN == None:
+        fail("DISCORD_TOKEN env isn't set")
+    config["discord_token"] = DISCORD_TOKEN
 
-intents = discord.Intents.default()
-intents.message_content = True
+    NUMBER_OF_ROLES = int(os.getenv("NUMBER_OF_ROLES"))
+    if NUMBER_OF_ROLES == None:
+        fail("NUMBER_OF_ROLES env isn't set")
 
-client = discord.Client(intents=intents)
+    ROLES = []
+    for i in range(NUMBER_OF_ROLES):
+        ROLE = os.getenv("ROLE_" + str(i+1))
+        if ROLE == None:
+            fail("ROLE_%s env isn't set"%(str(i+1)))
+        ROLES.append(ROLE)
+    config["roles"] = ROLES
+
+    return config
 
 @client.event
 async def on_connect():
@@ -45,8 +86,8 @@ async def on_connect():
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}")
-    asyncio.create_task(unidentified(UNIDENTIFIED_HOURS*3600))
-    asyncio.create_task(calendar(CALENDAR_HOURS*3600))
+    asyncio.create_task(unidentified(int(config["unidentified_hours"])*3600))
+    asyncio.create_task(calendar(int(config["calendar_hours"])*3600))
 
 @client.event
 async def on_message(message):
@@ -56,13 +97,13 @@ async def on_message(message):
     if user == client.user:
         return
 
-    if content.startswith("/smer"):
+    if content.startswith(config["command"]):
         wanted_role = "null"
         discord_roles = []
 
         if content.endswith("none"):
             wanted_role = "none"
-        for role in roles:
+        for role in config["roles"]:
             discord_role = discord.utils.get(message.guild.roles, name=role)
             discord_roles.append(discord_role)
             if (wanted_role != "none") and (content.endswith(role.lower()) or content.endswith(role.upper())):
@@ -72,31 +113,32 @@ async def on_message(message):
             for discord_role in discord_roles:
                 await user.remove_roles(discord_role, reason="Requested removal: " + discord_role.name, atomic=True)
         
-            log = ""
             if wanted_role != "none":
                 await user.add_roles(wanted_role, reason="Requested role: " + wanted_role.name, atomic=True)
-                log = "Successfully added " + user.display_name + " to " + wanted_role.name
+                msg = "Successfully added " + user.display_name + " to " + wanted_role.name
             else:
-                log = "Successfully removed " + user.display_name + " from all roles"
-            print(log)
-            await message.channel.send(log, delete_after=5)
+                msg = "Successfully removed " + user.display_name + " from all roles"
+            
+            log.info(msg)
+            await message.channel.send(msg, delete_after=5)
             await message.delete(delay=3)
 
         else:
-            log = "That role doesn't exist"
-            await message.channel.send(log, delete_after=5)
+            msg = "That role doesn't exist"
+            await message.channel.send(msg, delete_after=5)
             await message.delete(delay=3)
 
     else:
-        log = "Wrong command or trying to spam. Please write the command correctly and don't spam this channel."
-        await message.channel.send(log, delete_after=5)
+        msg = "Wrong command or trying to spam. Please write the command correctly and don't spam this channel."
+        await message.channel.send(msg, delete_after=5)
         await message.delete(delay=3)
 
 async def unidentified(delay):
     for guild in client.guilds:
         for channel in guild.channels:
             if channel.name == "unidentified":
-                asyncio.create_task(spamToJoin(channel, "@everyone Idite u kanal #smerovi i odaberite smer.", delay))
+                msg = "@everyone Idite u kanal #smerovi i odaberite smer."
+                asyncio.create_task(spamToJoin(channel, msg, delay))
 
 async def spamToJoin(channel, msg, delay):
     await channel.purge()
@@ -104,19 +146,16 @@ async def spamToJoin(channel, msg, delay):
         await channel.send(msg, delete_after=delay)
         await asyncio.sleep(delay)
 
-import requests, json
-from datetime import *
-
 async def calendar(delay):
     for guild in client.guilds:
         for category in guild.categories:
             if category.name == "calendar":
                 for channel in category.channels:
-                    for role in roles:
+                    for role in config["roles"]:
                         if role.lower() == channel.name.lower():
                             CALENDAR_URL = os.getenv("CALENDAR_URL_" + role)
                             if CALENDAR_URL == None:
-                                print("CALENDAR_URL_%s env isn't set, skipping."%(role))
+                                log.info("CALENDAR_URL_%s env isn't set, skipping."%(role))
                             else:
                                 asyncio.create_task(updateCalendar(channel, CALENDAR_URL, delay))
 
@@ -208,10 +247,10 @@ async def updateCalendar(channel, calendar_url, delay):
         week = await parseWeek(week_data)
 
         if week_old != week:
-            print("week_old\n\n")
-            print(week_old)
-            print("week\n\n")
-            print(week)
+            log.debug(str(week_old))
+            log.debug("----- week_old != week -----")
+            log.debug(str(week))
+
             week_old = week
 
             await channel.purge()
@@ -239,11 +278,8 @@ async def updateCalendar(channel, calendar_url, delay):
 
         await asyncio.sleep(delay)
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 async def classesPerDayGraph(channel_name, week):
-    filename = SAVED_PLOTS + "/" + channel_name + ".png"
+    filename = config["saved_plots"] + "/" + channel_name + ".png"
     data = dict()
 
     for weekday in week:
@@ -266,4 +302,9 @@ async def classesPerDayGraph(channel_name, week):
     return discord.File(filename)
 
 if __name__ == "__main__":
-    client.run(DISCORD_TOKEN)
+    print("Starting Smerac!")
+
+    global config = setup()
+    setup_logger()
+
+    client.run(config["discord_token"])
