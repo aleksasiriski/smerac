@@ -280,7 +280,7 @@ async def updateCalendar(config, channel, calendar_url, delay):
 
         await asyncio.sleep(delay)
 
-async def classesPerDayGraph(channel_name, week):
+async def classesPerDayGraph(config, channel_name, week):
     filename = config["saved_plots"] + "/" + channel_name + ".png"
     data = dict()
 
