@@ -16,7 +16,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
-def setup_logger():
+def setup_logger(config):
     if os.getenv("DEBUG") == None:
         logging_level = logging.INFO
     else:
@@ -32,7 +32,7 @@ def fail(msg):
     print(msg)
     exit(1)
 
-def setup(config):
+def setup():
     config = dict()
 
     LOG_FILE = os.getenv("LOG_FILE")
