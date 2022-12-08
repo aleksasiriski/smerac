@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN mkdir -p /config/savedplots
+RUN mkdir -p /config/{logs,savedplots}
 
 VOLUME /config
 
