@@ -137,15 +137,15 @@ async def setRole(message):
 async def on_message(message):
     await setRole(message)
 
-@tree.command(name = "smer IT", description = "Set your role to IT") 
+@tree.command(name = "it", description = "Set your role to IT") 
 async def slashSetRole(interaction):
     await setRole("smer IT")
 
-@tree.command(name = "smer RN", description = "Set your role to RN") 
+@tree.command(name = "rn", description = "Set your role to RN") 
 async def slashSetRole(interaction):
     await setRole("smer RN")
 
-@tree.command(name = "smer PM", description = "Set your role to PM") 
+@tree.command(name = "pm", description = "Set your role to PM") 
 async def slashSetRole(interaction):
     await setRole("smer PM")
 
