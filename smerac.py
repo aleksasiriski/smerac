@@ -81,11 +81,11 @@ def setup():
 
 @client.event
 async def on_connect():
-    print(f"Connected to discord!")
+    log.info("Connected to discord!")
 
 @client.event
 async def on_ready():
-    print(f"Logged in as {client.user}")
+    log.info("Logged in as " + client.user)
     asyncio.create_task(unidentified(int(config["unidentified_hours"])*3600))
     asyncio.create_task(calendar(int(config["calendar_hours"])*3600))
 
@@ -302,7 +302,7 @@ async def classesPerDayGraph(channel_name, week):
     return discord.File(filename)
 
 if __name__ == "__main__":
-    print("Starting Smerac!")
+    log.info("Starting Smerac!")
 
     global config = setup()
     setup_logger()
