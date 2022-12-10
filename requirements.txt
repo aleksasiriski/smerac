@@ -1,5 +1,5 @@
 asyncio
-discord.py
+discord-py-interactions
 requests
 numpy
 matplotlib

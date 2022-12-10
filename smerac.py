@@ -1,38 +1,32 @@
 import os
 import sys
 import logging
+
 import asyncio
-import discord
+import interactions
+
 import requests
 import json
+
 import numpy as np
 import matplotlib.pyplot as plt
+
 from datetime import *
 
+# Global variables
+
 log = logging.getLogger("smerac")
-intents = discord.Intents.default()
-intents.message_content = True
-client = discord.Client(intents=intents)
-tree = discord.app_commands.CommandTree(client)
+config = dict()
+bot
 
-def setup_logger(config):
-    if os.getenv("DEBUG") == None:
-        logging_level = logging.INFO
-    else:
-        logging_level = logging.DEBUG
-
-    logging.basicConfig(
-        filename=config["log_file"],
-        level=logging_level,
-        format="%(asctime)s - %(name)s[%(process)s] - %(levelname)s - %(message)s",
-    )
+# Setup
 
 def fail(msg):
     print(msg)
     exit(1)
 
-def setup():
-    config = dict()
+def setup_config():
+    global config
 
     LOG_FILE = os.getenv("LOG_FILE")
     if LOG_FILE == None:
@@ -76,94 +70,92 @@ def setup():
         ROLES.append(ROLE)
     config["roles"] = ROLES
 
-    return config
+def setup_logger():
+    if os.getenv("DEBUG") == None:
+        logging_level = logging.INFO
+    else:
+        logging_level = logging.DEBUG
 
-@client.event
-async def on_connect():
-    log.info("Connected to discord!")
+    logging.basicConfig(
+        filename=config["log_file"],
+        level=logging_level,
+        format="%(asctime)s - %(name)s[%(process)s] - %(levelname)s - %(message)s",
+    )
 
-@client.event
-async def on_ready():
-    log.info(f"Logged in as {client.user}")
-    config = setup()
-    asyncio.create_task(unidentified(int(config["unidentified_hours"])*3600))
-    asyncio.create_task(calendar(config, int(config["calendar_hours"])*3600))
-
-async def setRole(message):
-    config = setup()
+# Commands
+"""
+@bot.command(
+    name="smer",
+    description="Choose your role!",
+#    scope=the_id_of_your_guild,
+    options = [
+        interactions.Option(
+            name="role",
+            description="The role you want.",
+            type=interactions.OptionType.STRING,
+            required=True,
+        ),
+    ],
+)
+async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
     user = message.author
     content = message.content
 
-    if user == client.user:
-        return
+    wanted_role = "null"
+    discord_roles = []
 
-    if content.startswith(config["command"]):
-        wanted_role = "null"
-        discord_roles = []
+    if content.endswith("none"):
+        wanted_role = "none"
+    for role in config["roles"]:
+        discord_role = discord.utils.get(message.guild.roles, name=role)
+        discord_roles.append(discord_role)
+        if (wanted_role != "none") and (content.endswith(role.lower()) or content.endswith(role.upper())):
+            wanted_role = discord_role
 
-        if content.endswith("none"):
-            wanted_role = "none"
-        for role in config["roles"]:
-            discord_role = discord.utils.get(message.guild.roles, name=role)
-            discord_roles.append(discord_role)
-            if (wanted_role != "none") and (content.endswith(role.lower()) or content.endswith(role.upper())):
-                wanted_role = discord_role
-
-        if wanted_role != "null":
-            for discord_role in discord_roles:
-                await user.remove_roles(discord_role, reason="Requested removal: " + discord_role.name, atomic=True)
-        
-            if wanted_role != "none":
-                await user.add_roles(wanted_role, reason="Requested role: " + wanted_role.name, atomic=True)
-                msg = "Successfully added " + user.display_name + " to " + wanted_role.name
-            else:
-                msg = "Successfully removed " + user.display_name + " from all roles"
-            
-            log.info(msg)
-            await message.channel.send(msg, delete_after=5)
-            await message.delete(delay=3)
-
+    if wanted_role != "null":
+        for discord_role in discord_roles:
+            await user.remove_roles(discord_role, reason="Requested removal: " + discord_role.name, atomic=True)
+    
+        if wanted_role != "none":
+            await user.add_roles(wanted_role, reason="Requested role: " + wanted_role.name, atomic=True)
+            msg = "Successfully added " + user.display_name + " to " + wanted_role.name
         else:
-            msg = "That role doesn't exist"
-            await message.channel.send(msg, delete_after=5)
-            await message.delete(delay=3)
-
-    else:
-        msg = "Wrong command or trying to spam. Please write the command correctly and don't spam this channel."
+            msg = "Successfully removed " + user.display_name + " from all roles"
+            
+        log.info(msg)
         await message.channel.send(msg, delete_after=5)
         await message.delete(delay=3)
 
-@client.event
-async def on_message(message):
-    await setRole(message)
-
-@tree.command(name = "it", description = "Set your role to IT") 
-async def slashSetRole(interaction):
-    await setRole("smer IT")
-
-@tree.command(name = "rn", description = "Set your role to RN") 
-async def slashSetRole(interaction):
-    await setRole("smer RN")
-
-@tree.command(name = "pm", description = "Set your role to PM") 
-async def slashSetRole(interaction):
-    await setRole("smer PM")
+    else:
+        msg = "That role doesn't exist"
+        await message.channel.send(msg, delete_after=5)
+        await message.delete(delay=3)
+"""
+# Unidentified
 
 async def unidentified(delay):
-    for guild in client.guilds:
-        for channel in guild.channels:
-            if channel.name == "unidentified":
-                msg = "@everyone Idite u kanal #smerovi i odaberite smer."
-                asyncio.create_task(spamToJoin(channel, msg, delay))
+    for guild in bot.guilds:
+        for channel in await guild.get_all_channels():
+            if channel.type == interactions.ChannelType.GUILD_TEXT and channel.name == "unidentified":
+                content = "@everyone Idite u kanal #smerovi i odaberite smer."
+                asyncio.create_task(spamToJoin(channel, content, delay))
 
-async def spamToJoin(channel, msg, delay):
-    await channel.purge()
+async def spamToJoin(channel, content, delay):
+    await channel.purge(1, check=check_pinned)
     while True:
-        await channel.send(msg, delete_after=delay)
+        message = await channel.send(content=content)
         await asyncio.sleep(delay)
+        await message.delete()
 
-async def calendar(config, delay):
-    for guild in client.guilds:
+# Used by both Unidentified and Calendar
+
+def check_pinned(message):
+    return not message.pinned
+
+# Calendar
+
+async def calendar(delay):
+    for guild in bot.guilds:
         for category in guild.categories:
             if category.name == "calendar":
                 for channel in category.channels:
@@ -173,7 +165,21 @@ async def calendar(config, delay):
                             if CALENDAR_URL == None:
                                 log.info("CALENDAR_URL_%s env isn't set, skipping."%(role))
                             else:
-                                asyncio.create_task(updateCalendar(config, channel, CALENDAR_URL, delay))
+                                asyncio.create_task(updateCalendar(channel, CALENDAR_URL, delay))
+async def calendar(delay):
+    channels = await guild.get_all_channels()
+    for category in channels:
+        if category.type == interactions.ChannelType.GUILD_CATEGORY and category.name.lower() == "calendar":
+            for role in config["roles"]:
+                for channel in channels:
+                    if channel.parent_id == category.id and role.lower() == channel.name.lower():
+                        CALENDAR_URL = os.getenv("CALENDAR_URL_" + role)
+                        if CALENDAR_URL == None:
+                            log.info("CALENDAR_URL_%s env isn't set, skipping."%(role))
+                        else:
+                            asyncio.create_task(updateCalendar(channel, CALENDAR_URL, delay))
+                        break
+            break
 
 def dayInWeek(dayInt):
     switcher = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}
@@ -252,7 +258,7 @@ async def parseWeek(week_data):
     
     return week
 
-async def updateCalendar(config, channel, calendar_url, delay):
+async def updateCalendar(channel, calendar_url, delay):
     spacer = "-------------------------"
     week_old = dict()
 
@@ -269,7 +275,7 @@ async def updateCalendar(config, channel, calendar_url, delay):
 
             week_old = week
 
-            await channel.purge()
+            await channel.purge(8, check=check_pinned)
 
             for weekday in week:
                 if week[weekday] != []:
@@ -288,13 +294,13 @@ async def updateCalendar(config, channel, calendar_url, delay):
                         day_output += "\n"
                     day_output += spacer
 
-                    await channel.send(day_output)
+                    await channel.send(content=day_output)
 
-            await channel.send(file = await classesPerDayGraph(config, channel.name, week))
+            await channel.send(files = await classesPerDayGraph(channel.name, week))
 
         await asyncio.sleep(delay)
 
-async def classesPerDayGraph(config, channel_name, week):
+async def classesPerDayGraph(channel_name, week):
     filename = config["saved_plots"] + "/" + channel_name + ".png"
     data = dict()
 
@@ -315,12 +321,25 @@ async def classesPerDayGraph(config, channel_name, week):
     plt.savefig(filename)
     plt.close()
 
-    return discord.File(filename)
+    return interactions.File(filename=filename)
+
+# Startup
+
+@bot.event(name="on_start")
+async def on_start():
+    await bot.wait_until_ready()
+
+    log.info("Started Smerac!")
+
+    asyncio.create_task(unidentified(int(config["unidentified_hours"])*3600))
+    asyncio.create_task(calendar(int(config["calendar_hours"])*3600))
 
 if __name__ == "__main__":
     log.info("Starting Smerac!")
 
-    config = setup()
-    setup_logger(config)
+    setup_config()
+    setup_logger()
 
-    client.run(config["discord_token"])
+    global bot
+    bot = interactions.Client(token=config["discord_token"])
+    bot.start()
