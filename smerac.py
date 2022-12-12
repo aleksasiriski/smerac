@@ -121,7 +121,7 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
             if wanted_role.lower() == role.lower():
                 for discord_role in discord_roles:
                     if wanted_role.lower() == discord_role.name.lower():
-                        author.add_role(discord_role.id)
+                        await author.add_role(discord_role.id)
                         break
                 break
         log.info(f"Added {author.nick} to {wanted.role}.")
