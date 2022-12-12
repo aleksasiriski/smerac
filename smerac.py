@@ -13,12 +13,6 @@ import matplotlib.pyplot as plt
 
 from datetime import *
 
-# Global variables
-
-log = logging.getLogger("smerac")
-config = dict()
-bot
-
 # Setup
 
 def fail(msg):
@@ -26,7 +20,7 @@ def fail(msg):
     exit(1)
 
 def setup_config():
-    global config
+    config = dict()
 
     LOG_FILE = os.getenv("LOG_FILE")
     if LOG_FILE == None:
@@ -36,12 +30,12 @@ def setup_config():
     UNIDENTIFIED_HOURS = os.getenv("UNIDENTIFIED_HOURS")
     if UNIDENTIFIED_HOURS == None:
         UNIDENTIFIED_HOURS = 1
-    config["unidentified_hours"] = UNIDENTIFIED_HOURS
+    config["unidentified_hours"] = int(UNIDENTIFIED_HOURS)*3600
 
     CALENDAR_HOURS = os.getenv("CALENDAR_HOURS")
     if CALENDAR_HOURS == None:
         CALENDAR_HOURS = 3
-    config["calendar_hours"] = CALENDAR_HOURS
+    config["calendar_hours"] = int(CALENDAR_HOURS)*3600
 
     COMMAND = os.getenv("COMMAND")
     if COMMAND == None:
@@ -70,7 +64,9 @@ def setup_config():
         ROLES.append(ROLE)
     config["roles"] = ROLES
 
-def setup_logger():
+    return config
+
+def setup_logger(config):
     if os.getenv("DEBUG") == None:
         logging_level = logging.INFO
     else:
@@ -81,6 +77,12 @@ def setup_logger():
         level=logging_level,
         format="%(asctime)s - %(name)s[%(process)s] - %(levelname)s - %(message)s",
     )
+
+# Global variables
+
+log = logging.getLogger("smerac")
+config = setup_config()
+bot = interactions.Client(token=config["discord_token"])
 
 # Commands
 """
@@ -134,6 +136,8 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
 # Unidentified
 
 async def unidentified(delay):
+    log.debug("Unidentified")
+
     for guild in bot.guilds:
         for channel in await guild.get_all_channels():
             if channel.type == interactions.ChannelType.GUILD_TEXT and channel.name == "unidentified":
@@ -141,6 +145,8 @@ async def unidentified(delay):
                 asyncio.create_task(spamToJoin(channel, content, delay))
 
 async def spamToJoin(channel, content, delay):
+    log.debug("Spamming " + channel.name)
+
     await channel.purge(1, check=check_pinned)
     while True:
         message = await channel.send(content=content)
@@ -155,31 +161,22 @@ def check_pinned(message):
 # Calendar
 
 async def calendar(delay):
+    log.debug("Calendar")
+
     for guild in bot.guilds:
-        for category in guild.categories:
-            if category.name == "calendar":
-                for channel in category.channels:
-                    for role in config["roles"]:
-                        if role.lower() == channel.name.lower():
+        channels = await guild.get_all_channels()
+        for category in channels:
+            if category.type == interactions.ChannelType.GUILD_CATEGORY and category.name.lower() == "calendar":
+                for role in config["roles"]:
+                    for channel in channels:
+                        if channel.parent_id == category.id and role.lower() == channel.name.lower():
                             CALENDAR_URL = os.getenv("CALENDAR_URL_" + role)
                             if CALENDAR_URL == None:
                                 log.info("CALENDAR_URL_%s env isn't set, skipping."%(role))
                             else:
                                 asyncio.create_task(updateCalendar(channel, CALENDAR_URL, delay))
-async def calendar(delay):
-    channels = await guild.get_all_channels()
-    for category in channels:
-        if category.type == interactions.ChannelType.GUILD_CATEGORY and category.name.lower() == "calendar":
-            for role in config["roles"]:
-                for channel in channels:
-                    if channel.parent_id == category.id and role.lower() == channel.name.lower():
-                        CALENDAR_URL = os.getenv("CALENDAR_URL_" + role)
-                        if CALENDAR_URL == None:
-                            log.info("CALENDAR_URL_%s env isn't set, skipping."%(role))
-                        else:
-                            asyncio.create_task(updateCalendar(channel, CALENDAR_URL, delay))
-                        break
-            break
+                            break
+                break
 
 def dayInWeek(dayInt):
     switcher = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}
@@ -190,6 +187,8 @@ def dayInWeekSrpski(day):
     return switcher.get(day, "Error!")
 
 async def generateWeek(events):
+    log.debug("Generating week")
+
     current_date = date.today()
     week = {"mon": [], "tue": [], "wed": [], "thu": [], "fri": [], "sat": [], "sun": []}
 
@@ -217,6 +216,8 @@ async def generateWeek(events):
     return week
 
 async def parseWeek(week_data):
+    log.debug("Parsing week")
+
     week = {"mon": [], "tue": [], "wed": [], "thu": [], "fri": [], "sat": [], "sun": []}
 
     for weekday in week_data:
@@ -259,6 +260,8 @@ async def parseWeek(week_data):
     return week
 
 async def updateCalendar(channel, calendar_url, delay):
+    log.debug("Updating calendar for " + channel.name)
+
     spacer = "-------------------------"
     week_old = dict()
 
@@ -301,6 +304,8 @@ async def updateCalendar(channel, calendar_url, delay):
         await asyncio.sleep(delay)
 
 async def classesPerDayGraph(channel_name, week):
+    log.debug("Plotting graph for " + channel_name)
+
     filename = config["saved_plots"] + "/" + channel_name + ".png"
     data = dict()
 
@@ -331,15 +336,10 @@ async def on_start():
 
     log.info("Started Smerac!")
 
-    asyncio.create_task(unidentified(int(config["unidentified_hours"])*3600))
-    asyncio.create_task(calendar(int(config["calendar_hours"])*3600))
+    asyncio.create_task(unidentified(config["unidentified_hours"]))
+    asyncio.create_task(calendar(config["calendar_hours"]))
 
 if __name__ == "__main__":
     log.info("Starting Smerac!")
-
-    setup_config()
-    setup_logger()
-
-    global bot
-    bot = interactions.Client(token=config["discord_token"])
+    setup_logger(config)
     bot.start()
