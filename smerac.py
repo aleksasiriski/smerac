@@ -85,14 +85,14 @@ config = setup_config()
 bot = interactions.Client(token=config["discord_token"])
 
 # Commands
-"""
+
 @bot.command(
     name="smer",
     description="Choose your role!",
-#    scope=the_id_of_your_guild,
+    scope=1026925641708339301,
     options = [
         interactions.Option(
-            name="role",
+            name="wanted_role",
             description="The role you want.",
             type=interactions.OptionType.STRING,
             required=True,
@@ -100,39 +100,25 @@ bot = interactions.Client(token=config["discord_token"])
     ],
 )
 async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
-    user = message.author
-    content = message.content
+    author = ctx.author
+    guild = await ctx.get_guild()
+    discord_roles = await guild.get_all_roles()
 
-    wanted_role = "null"
-    discord_roles = []
-
-    if content.endswith("none"):
-        wanted_role = "none"
-    for role in config["roles"]:
-        discord_role = discord.utils.get(message.guild.roles, name=role)
-        discord_roles.append(discord_role)
-        if (wanted_role != "none") and (content.endswith(role.lower()) or content.endswith(role.upper())):
-            wanted_role = discord_role
-
-    if wanted_role != "null":
-        for discord_role in discord_roles:
-            await user.remove_roles(discord_role, reason="Requested removal: " + discord_role.name, atomic=True)
+    for author_role_id in author.roles:
+        author_role = await guild.get_role(author_role_id)
+        for role in config["roles"]:
+            if role.lower() == author_role.name.lower()
+                await author.remove_role(author_role_id)
     
-        if wanted_role != "none":
-            await user.add_roles(wanted_role, reason="Requested role: " + wanted_role.name, atomic=True)
-            msg = "Successfully added " + user.display_name + " to " + wanted_role.name
-        else:
-            msg = "Successfully removed " + user.display_name + " from all roles"
-            
-        log.info(msg)
-        await message.channel.send(msg, delete_after=5)
-        await message.delete(delay=3)
+    if wanted_role != "none":
+        for role in config["roles"]:
+            if wanted_role.lower() == role.lower():
+                for discord_role in discord_roles:
+                    if wanted_role.lower() == discord_role.name.lower():
+                        author.add_role(discord_role.id)
+                        break
+                break
 
-    else:
-        msg = "That role doesn't exist"
-        await message.channel.send(msg, delete_after=5)
-        await message.delete(delay=3)
-"""
 # Unidentified
 
 async def unidentified(delay):
