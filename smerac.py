@@ -27,11 +27,6 @@ def setup_config():
         LOG_FILE = "/config/logs/%s.log"%(datetime.today().strftime("%Y-%m-%d-%H-%M-%S"))
     config["log_file"] = LOG_FILE
 
-    UNIDENTIFIED_HOURS = os.getenv("UNIDENTIFIED_HOURS")
-    if UNIDENTIFIED_HOURS == None:
-        UNIDENTIFIED_HOURS = 1
-    config["unidentified_hours"] = int(UNIDENTIFIED_HOURS)*3600
-
     CALENDAR_HOURS = os.getenv("CALENDAR_HOURS")
     if CALENDAR_HOURS == None:
         CALENDAR_HOURS = 3
@@ -84,6 +79,11 @@ log = logging.getLogger("smerac")
 config = setup_config()
 bot = interactions.Client(token=config["discord_token"])
 
+# Used by both Commands and Calendar
+
+def check_pinned(message):
+    return not message.pinned
+
 # Commands
 
 @bot.command(
@@ -125,35 +125,14 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
                         break
                 break
         log.info(f"Added {author.nick} to {wanted_role}.")
-        await ctx.send(f"Succesfully added {author.nick} to {wanted_role}!")
+        message = await ctx.send(f"Succesfully added {author.nick} to {wanted_role}!")
+        await asyncio.sleep(5)
+        await message.delete()
     else:
         log.info(f"Removed {author.nick} from all roles.")
-        await ctx.send(f"Succesfully removed {author.nick} from all roles!")
-
-# Unidentified
-
-async def unidentified(delay):
-    log.debug("Unidentified")
-
-    for guild in bot.guilds:
-        for channel in await guild.get_all_channels():
-            if channel.type == interactions.ChannelType.GUILD_TEXT and channel.name == "unidentified":
-                content = "@everyone Idite u kanal #smerovi i odaberite smer."
-                asyncio.create_task(spamToJoin(channel, content, delay))
-
-async def spamToJoin(channel, content, delay):
-    log.debug("Spamming " + channel.name)
-
-    await channel.purge(1, check=check_pinned)
-    while True:
-        message = await channel.send(content=content)
-        await asyncio.sleep(delay)
+        message = await ctx.send(f"Succesfully removed {author.nick} from all roles!")
+        await asyncio.sleep(5)
         await message.delete()
-
-# Used by both Unidentified and Calendar
-
-def check_pinned(message):
-    return not message.pinned
 
 # Calendar
 
@@ -333,8 +312,7 @@ async def on_start():
 
     log.info("Started Smerac!")
 
-    asyncio.create_task(unidentified(config["unidentified_hours"]))
-    asyncio.create_task(calendar(config["calendar_hours"]))
+    await calendar(config["calendar_hours"])
 
 if __name__ == "__main__":
     log.info("Starting Smerac!")
