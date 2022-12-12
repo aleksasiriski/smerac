@@ -110,7 +110,7 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
     for author_role_id in author.roles:
         author_role = await guild.get_role(author_role_id)
         for role in config["roles"]:
-            if role.lower() == author_role.name.lower():
+            if role.upper() == author_role.name.upper():
                 await author.remove_role(author_role_id)
                 log.debug(f"Removed {author.nick} from {role}")
             else:
@@ -118,14 +118,14 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
     
     if wanted_role != "none":
         for role in config["roles"]:
-            if wanted_role.lower() == role.lower():
+            if wanted_role.upper() == role.upper():
                 for discord_role in discord_roles:
-                    if wanted_role.lower() == discord_role.name.lower():
+                    if wanted_role.upper() == discord_role.name.upper():
                         await author.add_role(discord_role.id)
                         break
                 break
         log.info(f"Added {author.nick} to {wanted_role}.")
-        message = await ctx.send(f"Succesfully added {author.nick} to {wanted_role}!")
+        message = await ctx.send(f"Succesfully added {author.nick} to {wanted_role.upper()}!")
         await asyncio.sleep(5)
         await message.delete()
     else:
@@ -142,10 +142,10 @@ async def calendar(delay):
     for guild in bot.guilds:
         channels = await guild.get_all_channels()
         for category in channels:
-            if category.type == interactions.ChannelType.GUILD_CATEGORY and category.name.lower() == "calendar":
+            if category.type == interactions.ChannelType.GUILD_CATEGORY and category.name.upper() == "calendar":
                 for role in config["roles"]:
                     for channel in channels:
-                        if channel.parent_id == category.id and role.lower() == channel.name.lower():
+                        if channel.parent_id == category.id and role.upper() == channel.name.upper():
                             CALENDAR_URL = os.getenv("CALENDAR_URL_" + role)
                             if CALENDAR_URL == None:
                                 log.info("CALENDAR_URL_%s env isn't set, skipping."%(role))
@@ -207,11 +207,11 @@ async def parseWeek(week_data):
                 if week[weekday] != []:
                     for event_old in week[weekday]:
 
-                        if name.lower().replace(" ", "") == event_old["name"].lower().replace(" ", ""):
+                        if name.upper().replace(" ", "") == event_old["name"].upper().replace(" ", ""):
 
                             foundInfo = False
                             for info_old in event_old["info"]:
-                                if info.lower().replace(" ", "") == info_old["name"].lower().replace(" ", ""):
+                                if info.upper().replace(" ", "") == info_old["name"].upper().replace(" ", ""):
                                     info_old["start_times"].append(start_time)
                                     info_old["end_times"].append(end_time)
                                     foundInfo = True
