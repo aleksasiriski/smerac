@@ -89,7 +89,6 @@ def check_pinned(message):
 @bot.command(
     name="smer",
     description="Choose your role!",
-    scope=1026925641708339301,
     options = [
         interactions.Option(
             name="wanted_role",
