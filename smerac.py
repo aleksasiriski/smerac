@@ -125,14 +125,10 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
                         break
                 break
         log.info(f"Added {author.nick} to {wanted_role}.")
-        message = await ctx.send(f"Succesfully added {author.nick} to {wanted_role.upper()}!", ephemeral=True)
-        await asyncio.sleep(5)
-        await message.delete()
+        await ctx.send(f"Succesfully added {author.nick} to {wanted_role.upper()}!", ephemeral=True)
     else:
         log.info(f"Removed {author.nick} from all roles.")
-        message = await ctx.send(f"Succesfully removed {author.nick} from all roles!", ephemeral=True)
-        await asyncio.sleep(5)
-        await message.delete()
+        await ctx.send(f"Succesfully removed {author.nick} from all roles!", ephemeral=True)
 
 # Calendar
 
