@@ -107,7 +107,7 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
     for author_role_id in author.roles:
         author_role = await guild.get_role(author_role_id)
         for role in config["roles"]:
-            if role.lower() == author_role.name.lower()
+            if role.lower() == author_role.name.lower():
                 await author.remove_role(author_role_id)
     
     if wanted_role != "none":
