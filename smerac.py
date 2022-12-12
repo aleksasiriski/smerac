@@ -124,7 +124,7 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
                         await author.add_role(discord_role.id)
                         break
                 break
-        log.info(f"Added {author.nick} to {wanted.role}.")
+        log.info(f"Added {author.nick} to {wanted_role}.")
         await ctx.send(f"Succesfully added {author.nick} to {wanted_role}!")
     else:
         log.info(f"Removed {author.nick} from all roles.")
