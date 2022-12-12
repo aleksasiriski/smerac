@@ -101,6 +101,9 @@ bot = interactions.Client(token=config["discord_token"])
 )
 async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
     author = ctx.author
+
+    log.debug(f"Started choosing role for {author.nick}")
+
     guild = await ctx.get_guild()
     discord_roles = await guild.get_all_roles()
 
@@ -109,6 +112,9 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
         for role in config["roles"]:
             if role.lower() == author_role.name.lower():
                 await author.remove_role(author_role_id)
+                log.debug(f"Removed {author.nick} from {role}")
+            else:
+                log.debug(f"Role {role} isn't {author_role.name}")
     
     if wanted_role != "none":
         for role in config["roles"]:
@@ -118,6 +124,11 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
                         author.add_role(discord_role.id)
                         break
                 break
+        log.info(f"Added {author.nick} to {wanted.role}.")
+        ctx.send(f"Succesfully added {author.nick} to {wanted_role}!")
+    else:
+        log.info(f"Removed {author.nick} from all roles.")
+        ctx.send(f"Succesfully removed {author.nick} from all roles!")
 
 # Unidentified
 
