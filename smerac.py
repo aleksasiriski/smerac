@@ -308,7 +308,7 @@ async def on_start():
 
     log.info("Started Smerac!")
 
-    await calendar(config["calendar_hours"])
+    asyncio.create_task(calendar(config["calendar_hours"]))
 
 if __name__ == "__main__":
     log.info("Starting Smerac!")
