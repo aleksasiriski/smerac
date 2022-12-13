@@ -79,11 +79,6 @@ log = logging.getLogger("smerac")
 config = setup_config()
 bot = interactions.Client(token=config["discord_token"])
 
-# Used by both Commands and Calendar
-
-def check_pinned(message):
-    return not message.pinned
-
 # Commands
 
 @bot.command(
@@ -130,6 +125,9 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
         await ctx.send(f"Succesfully removed {author.nick} from all roles!", ephemeral=True)
 
 # Calendar
+
+def check_pinned(message):
+    return not message.pinned
 
 async def calendar(delay):
     log.debug("Calendar")
