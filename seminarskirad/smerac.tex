@@ -6,6 +6,34 @@
 \usepackage{graphicx}
 \usepackage{subfig}
 \usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
 
 \renewcommand{\figurename}{Slika}
 \graphicspath{ {./img/} }
@@ -97,15 +125,15 @@ Nakon uspešno parsiranih podataka potrebno je generisati raspored prilagođen z
 
 \section{Opis programa}
 \subsection{Nagli prekid usled greške}
-Ovaj deo koda služi da prekine tok programa u potpunosti, najčešće se koristi prilikom učitavanja promenjlivih okruženja tj. u slučaju da nisu postavljene.
-\begin{verbatim}
+Deo koda prikazan na Listingu 1 služi da prekine tok programa u potpunosti, najčešće se koristi prilikom učitavanja promenjlivih okruženja tj. u slučaju da nisu postavljene.
+\begin{lstlisting}[language=Python, caption=Nagli prekid usled greške]
     def fail(msg):
         print(msg)
         exit(1)
-\end{verbatim}
+\end{lstlisting}
 \subsection{Promenljive okruženja}
-Da bi Smerač mogao učitati potrebne postavke, koristi se biblioteka \textit{OS}. U sledećem kodu se takođe može videti upotreba naglog prekida kao i korišćenje nekih podrazumevanih vrednosti.
-\begin{verbatim}
+Da bi Smerač mogao učitati potrebne postavke, koristi se biblioteka \textit{OS}. U kodu prikazanom na Listingu 2 se takođe može videti upotreba naglog prekida kao i korišćenje nekih podrazumevanih vrednosti.
+\begin{lstlisting}[language=Python, caption=Učitavanje promenljivih okruženja]
     def setup_config():
         config = dict()
 
@@ -130,11 +158,11 @@ Da bi Smerač mogao učitati potrebne postavke, koristi se biblioteka \textit{OS
         ...
 
         return config
-\end{verbatim}
+\end{lstlisting}
 \newpage
 \subsection{Logging}
-Jedna od krucijalnih funkcionalnosti svakog programa je mogućnost zapisivanja šta se dešava prilikom izvršavanja. To je najpotrebnija alatka prilikom debagovanja koda, bilo to starog ili novog koda neke naknadno dodate funcionalnosti.
-\begin{verbatim}
+Jedna od krucijalnih funkcionalnosti svakog programa je mogućnost zapisivanja šta se dešava prilikom izvršavanja. To je najpotrebnija alatka prilikom debagovanja koda, bilo to starog ili novog koda neke naknadno dodate funcionalnosti. Podešavanje fajla za logovanje je prikazano na Listingu 3 a opcije loga na Listingu 4.
+\begin{lstlisting}[language=Python, caption=Podešavanje fajla za logovanje]
 def setup_config():
     
     ...
@@ -146,8 +174,8 @@ def setup_config():
     config["log_file"] = LOG_FILE
     
     ...
-\end{verbatim}
-\begin{verbatim}
+\end{lstlisting}
+\begin{lstlisting}[language=Python, caption=Opcije loga]
 def setup_logger(config):
     if os.getenv("DEBUG") == None:
         logging_level = logging.INFO
@@ -160,14 +188,14 @@ def setup_logger(config):
         format=
         "%(asctime)s - %(name)s[%(process)s] - %(levelname)s - %(message)s",
     )
-\end{verbatim}
+\end{lstlisting}
 \subsection{Globalne promenljive}
-Globalne promenljive su potrebne isključivo kada sve funkcije, iz celog programa, zahtevaju čitanje i pisanje zajedničkih podataka. Odličan primer ovoga bi bila konfiguracija sa svim postavkama potrebnim za rad programa. Pored toga, koristi se i promenljiva \textit{log} i \textit{bot} koja služi da se interaguje sa interactions-py API.
-\begin{verbatim}
+Globalne promenljive su potrebne isključivo kada sve funkcije, iz celog programa, zahtevaju čitanje i pisanje zajedničkih podataka. Odličan primer ovoga bi bila konfiguracija sa svim postavkama potrebnim za rad programa prikazana na Listingu 5. Pored toga, koristi se i promenljiva \texttt{log} i \texttt{bot} koja služi da interaguje sa interactions-py API.
+\begin{lstlisting}[language=Python, caption=Globalne promenljive]
     log = logging.getLogger("smerac")
     config = setup_config()
     bot = interactions.Client(token=config["discord_token"])
-\end{verbatim}
+\end{lstlisting}
 \newpage
 \subsection{Slash komande}
 \textit{Slash komande} se zapisuju u obliku:
@@ -176,8 +204,8 @@ Globalne promenljive su potrebne isključivo kada sve funkcije, iz celog program
 \end{verbatim}
 Takve komande su standardizovan način pozivanja funkcija proizvoljnog Discord bota.
 \subsubsection{Kreiranje slash komande}
-Pomoću biblioteke interactions-py moguće je kreirati slash komandu sa nazivom \textit{smer} i obaveznom opcijom \textit{traženi\_smer}, Slika a:
-\begin{verbatim}
+Pomoću biblioteke interactions-py moguće je kreirati slash komandu sa nazivom \texttt{smer} i obaveznom opcijom \texttt{traženi\_smer} što je prikazano na Listingu 6. Na Slici a vidljiv je izgled komande korisnicima na Discordu.
+\begin{lstlisting}[language=Python, caption=Kreiranje slash komande]
     @bot.command(
         name="smer",
         description="Choose your role!",
@@ -190,7 +218,7 @@ Pomoću biblioteke interactions-py moguće je kreirati slash komandu sa nazivom 
             ),
         ],
     )
-\end{verbatim}
+\end{lstlisting}
 \begin{figure}[h]
     \centering
     \subfloat[Slash komanda na Discordu]{{\includegraphics[height=2.5cm,width=6cm]{slashcommand}}}
