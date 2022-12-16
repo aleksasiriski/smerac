@@ -233,8 +233,181 @@ async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
         await ctx.send(f"Succesfully removed {author.nick} from all roles!",
                                                              ephemeral=True)
 \end{verbatim}
+Opcija \textit{ephemeral} znači da se poruka šalje samo autoru komande, tj. korisniku koji je pokrenuo komandu za izmenu smera.
 \newpage
-test
+\subsection{Kalendar}
+\subsubsection{Instanciranje niti}
+Kako bi se kalendar za svaki od smerova asinhrono učitavao, odvojena je funkcija koja pronalazi sve odgovarajuće kanale od funkcije za učitavanje, parsiranje i generisanje kalendara.
+\begin{verbatim}
+async def calendar(delay):
+    log.debug("Calendar")
+
+    for guild in bot.guilds:
+        channels = await guild.get_all_channels()
+        for category in channels:
+            if category.type == 
+               interactions.ChannelType.GUILD_CATEGORY and 
+               category.name.upper() == "calendar":
+                for role in config["roles"]:
+                    for channel in channels:
+                        if channel.parent_id == category.id and 
+                           role.upper() == channel.name.upper():
+                            CALENDAR_URL = os.getenv("CALENDAR_URL_" + role)
+                            if CALENDAR_URL == None:
+                                log.info("CALENDAR_URL_%s env isn't set,
+                                          skipping."%(role))
+                            else:
+                                asyncio.create_task(updateCalendar(channel,
+                                                      CALENDAR_URL, delay))
+                            break
+                break
+\end{verbatim}
+U slučaju da ne postoji URL za kalendar proizvoljnog smera, program prijavi to logu i nastavlja normalno da se izvršava.
+\newpage
+\subsubsection{Učitavanje kalendara}
+Glavna funkcija koja se bavi pozivom svih pomoćnih za rad sa kalendarom. Učitava JSON objekat sa URL-a i potom generiše narednu sedmicu i parsira je za podatke. Na kraju vrši ispis parsirane sedmice i takođe šalje graf sa brojem časova po danu.
+\begin{verbatim}
+async def updateCalendar(channel, calendar_url, delay):
+    log.debug("Updating calendar for " + channel.name)
+    spacer = "-------------------------"
+    week_old = dict()
+    while True:
+        calendar = json.loads(requests.get(calendar_url).text)
+        week_data = await generateWeek(calendar["items"])
+        week = await parseWeek(week_data)
+        if week_old != week:
+            log.debug(str(week_old))
+            log.debug("----- week_old != week -----")
+            log.debug(str(week))
+            week_old = week
+            await channel.purge(8, check=check_pinned)
+            for weekday in week:
+                if week[weekday] != []:
+                    day_output = spacer
+                    day_output += "\n\n**" + dayInWeekSrpski(weekday) + 
+                                                               ":**\n\n"
+                    for event in week[weekday]:
+                        day_output += "--- " + event["name"] + " ---\n"
+                        for info in event["info"]:
+                            day_output += info["name"] + "\n"
+
+                            for i in range(len(info["start_times"])):
+                                day_output += "**" + info["start_times"][i]
+                                     + "** - " + info["end_times"][i] + "\n"
+                        day_output += "\n"
+                    day_output += spacer
+                    await channel.send(content=day_output)
+            await channel.send(files=await classesPerDayGraph(channel.name,
+                                                                      week))
+        await asyncio.sleep(delay)
+\end{verbatim}
+\newpage
+\subsubsection{Generisanje sedmice}
+Prolazi kroz raspored za celu godinu i uzima sve časove koji se odvijaju u narednih 7 dana a potom ih svrstava po danima i sortira po početnom vremenu odvijanja.
+\begin{verbatim}
+async def generateWeek(events):
+    log.debug("Generating week")
+
+    current_date = date.today()
+    week = {"mon":[],"tue":[],"wed":[],"thu":[],"fri":[],"sat":[],"sun":[]}
+
+    for event in events:
+        start_date=datetime.fromisoformat(event["start"]["dateTime"]).date()
+        if (start_date >= current_date) and (start_date < current_date + 
+                                                        timedelta(days=7)):
+            if dayInWeek(start_date.weekday()) == "mon":
+                week["mon"].append(event)
+            elif dayInWeek(start_date.weekday()) == "tue":
+                week["tue"].append(event)
+            elif dayInWeek(start_date.weekday()) == "wed":
+                week["wed"].append(event)
+            elif dayInWeek(start_date.weekday()) == "thu":
+                week["thu"].append(event)
+            elif dayInWeek(start_date.weekday()) == "fri":
+                week["fri"].append(event)
+            elif dayInWeek(start_date.weekday()) == "sat":
+                week["sat"].append(event)
+            elif dayInWeek(start_date.weekday()) == "sun":
+                week["sun"].append(event)
+
+    for weekday in week:
+        week[weekday].sort(key = lambda event : 
+                        datetime.fromisoformat(event["start"]["dateTime"]))
+
+    return week
+\end{verbatim}
+\newpage
+\subsubsection{Parsiranje sedmice}
+Prolazi kroz sedmicu i spaja duplikate časova, ali razlikuje ako isti čas drže različiti proferosi ili se odvija na drugom mestu.
+\begin{verbatim}
+async def parseWeek(week_data):
+    log.debug("Parsing week")
+    week = {"mon":[],"tue":[],"wed":[],"thu":[],"fri":[],"sat":[],"sun":[]}
+    for weekday in week_data:
+        if week_data[weekday] != []:
+            for event in week_data[weekday]:
+                name, info = event["summary"].split(",", 1)
+                start_time = datetime.fromisoformat(
+                               event["start"]["dateTime"]).strftime("%H:%M")
+                end_time = datetime.fromisoformat(
+                               event["end"]["dateTime"]).strftime("%H:%M")
+                foundEvent = False
+                if week[weekday] != []:
+                    for event_old in week[weekday]:
+                        if name.upper().replace(" ", "") == 
+                           event_old["name"].upper().replace(" ", ""):
+                            foundInfo = False
+                            for info_old in event_old["info"]:
+                                if info.upper().replace(" ", "") == 
+                                   info_old["name"].upper().replace(" ", ""):
+                                    info_old["start_times"].append(start_time)
+                                    info_old["end_times"].append(end_time)
+                                    foundInfo = True
+                            if not foundInfo:
+                                new_info = {"name": info, "start_times": [],
+                                                          "end_times": []}
+                                new_info["start_times"].append(start_time)
+                                new_info["end_times"].append(end_time)
+                                event_old["info"].append(new_info)
+                            foundEvent = True
+                if not foundEvent:
+                    new_event = {"name": name, "info": []}
+                    new_info = {"name":info,"start_times":[],"end_times":[]}
+                    new_info["start_times"].append(start_time)
+                    new_info["end_times"].append(end_time)
+                    new_event["info"].append(new_info)
+                    week[weekday].append(new_event)
+    return week
+\end{verbatim}
+\newpage
+\subsection{Kreiranje grafa}
+Prolazi kroz parsiranu sedmicu i broji koliko ima časova po danu, nakon toga generiše graf uz pomoć matplotlib\cite{matplotlib} biblioteke. Povratna vrednost je lokacija sačuvane slike grafa.
+\begin{verbatim}
+    async def classesPerDayGraph(channel_name, week):
+        log.debug("Plotting graph for " + channel_name)
+
+        filename = config["saved_plots"] + "/" + channel_name + ".png"
+        data = dict()
+
+        for weekday in week:
+            data[dayInWeekSrpski(weekday)] = len(week[weekday])
+
+        keys = list(data.keys())
+        values = list(data.values())
+
+        fig = plt.figure(figsize = (10, 5))
+
+        plt.bar(keys, values, color ='maroon', width = 0.2)
+
+        plt.xlabel("Dani")
+        plt.ylabel("Broj časova")
+        plt.title("Broj časova po danu.")
+
+        plt.savefig(filename)
+        plt.close()
+
+        return interactions.File(filename=filename)
+\end{verbatim}
 \newpage
 \section{Zaključak}
 test
