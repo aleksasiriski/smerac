@@ -136,6 +136,7 @@ async def calendar(delay):
         channels = await guild.get_all_channels()
         for category in channels:
             if category.type == interactions.ChannelType.GUILD_CATEGORY and category.name.upper() == "calendar":
+                log.debug("Found category type with name calendar")
                 for role in config["roles"]:
                     for channel in channels:
                         if channel.parent_id == category.id and role.upper() == channel.name.upper():
@@ -143,6 +144,7 @@ async def calendar(delay):
                             if CALENDAR_URL == None:
                                 log.info("CALENDAR_URL_%s env isn't set, skipping."%(role))
                             else:
+                                log.info("Created task to update calendar for %s."%(role))
                                 asyncio.create_task(updateCalendar(channel, CALENDAR_URL, delay))
                             break
                 break
