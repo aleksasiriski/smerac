@@ -4,7 +4,6 @@ services:
     image: ghcr.io/aleksasiriski/smerac:latest
     environment:
       - TZ=Europe/Berlin
-      - UNIDENTIFIED_HOURS=${UNIDENTIFIED_HOURS:-1}
       - CALENDAR_HOURS=${CALENDAR_HOURS:-3}
       - SAVED_PLOTS=${SAVED_PLOTS:-/config/savedplots}
       - DISCORD_TOKEN=${DISCORD_TOKEN:-changeme}
