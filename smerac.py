@@ -135,7 +135,7 @@ async def calendar(delay):
     for guild in guilds:
         channels = await guild.get_all_channels()
         for category in channels:
-            if category.type == interactions.ChannelType.GUILD_CATEGORY and category.name.upper() == "calendar":
+            if category.type == interactions.ChannelType.GUILD_CATEGORY and category.name.upper() == "CALENDAR":
                 log.debug("Found category type with name calendar")
                 for role in config["roles"]:
                     for channel in channels:
