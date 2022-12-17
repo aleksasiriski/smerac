@@ -131,8 +131,8 @@ def check_pinned(message):
 
 async def calendar(delay):
     log.debug("Calendar")
-
-    for guild in bot.guilds:
+    guilds = bot.guilds
+    for guild in guilds:
         channels = await guild.get_all_channels()
         for category in channels:
             if category.type == interactions.ChannelType.GUILD_CATEGORY and category.name.upper() == "calendar":
