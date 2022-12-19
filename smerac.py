@@ -166,20 +166,7 @@ async def generateWeek(events):
     for event in events:
         start_date = datetime.fromisoformat(event["start"]["dateTime"]).date()
         if (start_date >= current_date) and (start_date < current_date + timedelta(days=7)):
-            if dayInWeek(start_date.weekday()) == "mon":
-                week["mon"].append(event)
-            elif dayInWeek(start_date.weekday()) == "tue":
-                week["tue"].append(event)
-            elif dayInWeek(start_date.weekday()) == "wed":
-                week["wed"].append(event)
-            elif dayInWeek(start_date.weekday()) == "thu":
-                week["thu"].append(event)
-            elif dayInWeek(start_date.weekday()) == "fri":
-                week["fri"].append(event)
-            elif dayInWeek(start_date.weekday()) == "sat":
-                week["sat"].append(event)
-            elif dayInWeek(start_date.weekday()) == "sun":
-                week["sun"].append(event)
+            week[dayInWeek(start_date.weekday())].append(event)
 
     for weekday in week:
         week[weekday].sort(key = lambda event : datetime.fromisoformat(event["start"]["dateTime"]))

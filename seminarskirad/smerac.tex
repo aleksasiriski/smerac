@@ -170,7 +170,7 @@ Da bi Smerač mogao učitati potrebne postavke, koristi se biblioteka \textit{OS
 \end{lstlisting}
 \newpage
 \subsection{Logging}
-Jedna od krucijalnih funkcionalnosti svakog programa je mogućnost zapisivanja šta se dešava prilikom izvršavanja. To je najpotrebnija alatka prilikom debagovanja koda, bilo to starog ili novog koda neke naknadno dodate funcionalnosti. Podešavanje fajla za logovanje je prikazano na Listingu \ref{lst:logconf} a opcije logovanja na Listingu \ref{lst:log}.
+Jedna od krucijalnih funkcionalnosti svakog programa je mogućnost zapisivanja šta se dešava prilikom izvršavanja. To je najpotrebnija alatka tokom debagovanja starog ili novog koda neke naknadno dodate funkcionalnosti. Podešavanje fajla za logovanje je prikazano na Listingu \ref{lst:logconf} a opcije logovanja na Listingu \ref{lst:log}.
 \begin{lstlisting}[language=Python, caption=Podešavanje fajla za logovanje, label=lst:logconf]
 def setup_config():
     
@@ -178,8 +178,7 @@ def setup_config():
 
     LOG_FILE = os.getenv("LOG_FILE")
     if LOG_FILE == None:
-        LOG_FILE = "/config/logs/%s.log"
-                   %(datetime.today().strftime("%Y-%m-%d-%H-%M-%S"))
+        LOG_FILE = "/config/logs/%s.log"%(datetime.today().strftime("%Y-%m-%d-%H-%M-%S"))
     config["log_file"] = LOG_FILE
     
     ...
@@ -199,11 +198,11 @@ def setup_logger(config):
     )
 \end{lstlisting}
 \subsection{Globalne promenljive}
-Globalne promenljive su potrebne isključivo kada sve funkcije, iz celog programa, zahtevaju čitanje i pisanje zajedničkih podataka. Odličan primer ovoga bi bila konfiguracija sa svim postavkama potrebnim za rad programa prikazana na Listingu \ref{lst:global}. Pored toga, koristi se i promenljiva \texttt{log} i \texttt{bot} koja služi da interaguje sa interactions-py API.
+Globalne promenljive su potrebne isključivo kada više različitih funkcija zahtevaju čitanje i pisanje zajedničkih podataka. Odličan primer ovoga bi bila konfiguracija sa svim postavkama potrebnim za rad programa prikazana na Listingu \ref{lst:global}. Pored toga, koristi se i promenljiva \texttt{log} i \texttt{bot} koja služi da interaguje sa interactions-py API.
 \begin{lstlisting}[language=Python, caption=Globalne promenljive, label=lst:global]
-    log = logging.getLogger("smerac")
-    config = setup_config()
-    bot = interactions.Client(token=config["discord_token"])
+log = logging.getLogger("smerac")
+config = setup_config()
+bot = interactions.Client(token=config["discord_token"])
 \end{lstlisting}
 \newpage
 \subsection{Slash komande}
@@ -214,26 +213,29 @@ Globalne promenljive su potrebne isključivo kada sve funkcije, iz celog program
 Takve komande su standardizovan način pozivanja funkcija proizvoljnog Discord bota.
 \subsubsection{Kreiranje slash komande}
 Pomoću biblioteke interactions-py moguće je kreirati slash komandu sa nazivom \texttt{smer} i obaveznom opcijom \texttt{wanted\_role} što je prikazano na Listingu \ref{lst:botcommand}. Na Slici \ref{fig:slashcommand} vidljiv je izgled komande korisnicima na Discordu.
+\vfill
 \begin{lstlisting}[language=Python, caption=Kreiranje slash komande, label=lst:botcommand]
-    @bot.command(
-        name="smer",
-        description="Choose your role!",
-        options = [
-            interactions.Option(
-                name="wanted_role",
-                description="The role you want.",
-                type=interactions.OptionType.STRING,
-                required=True,
-            ),
-        ],
-    )
+@bot.command(
+    name="smer",
+    description="Choose your role!",
+    options = [
+        interactions.Option(
+            name="wanted_role",
+            description="The role you want.",
+            type=interactions.OptionType.STRING,
+            required=True,
+        ),
+    ],
+)
 \end{lstlisting}
+\vfill
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=6cm]{slashcommand}
     \caption{Slash komanda na Discordu}
     \label{fig:slashcommand}
 \end{figure}
+\vfill
 \newpage
 \subsubsection{Dodeljivanje funkcionalnosti slash komandi}
 Da bi kreirana slash komanda izvršavala neki kod potrebno je odmah ispod njene kreacije deklarisati asinhrohu funkciju, prikazanu na Listingu \ref{lst:chooserole}, koja će izvršavati željeni kod.
@@ -293,7 +295,7 @@ async def calendar(delay):
                             break
                 break
 \end{lstlisting}
-U slučaju da ne postoji URL za kalendar proizvoljnog smera, program prijavljuje to logu i nastavlja normalno da se izvršava.
+U slučaju da ne postoji URL za kalendar proizvoljnog smera, program beleži to u log i nastavlja da se izvršava.
 \newpage
 \subsubsection{Učitavanje kalendara}
 Glavna funkcija, prikazana na Listingu \ref{lst:update}, koja se bavi pozivom svih pomoćnih za rad sa kalendarom. Učitava JSON objekat sa URL-a i potom generiše narednu sedmicu i parsira je za podatke. Na kraju vrši ispis parsirane sedmice i takođe šalje graf sa brojem časova po danu.
@@ -353,20 +355,7 @@ async def generateWeek(events):
     for event in events:
         start_date = datetime.fromisoformat(event["start"]["dateTime"]).date()
         if (start_date >= current_date) and (start_date < current_date + timedelta(days=7)):
-            if dayInWeek(start_date.weekday()) == "mon":
-                week["mon"].append(event)
-            elif dayInWeek(start_date.weekday()) == "tue":
-                week["tue"].append(event)
-            elif dayInWeek(start_date.weekday()) == "wed":
-                week["wed"].append(event)
-            elif dayInWeek(start_date.weekday()) == "thu":
-                week["thu"].append(event)
-            elif dayInWeek(start_date.weekday()) == "fri":
-                week["fri"].append(event)
-            elif dayInWeek(start_date.weekday()) == "sat":
-                week["sat"].append(event)
-            elif dayInWeek(start_date.weekday()) == "sun":
-                week["sun"].append(event)
+            week[dayInWeek(start_date.weekday())].append(event)
 
     for weekday in week:
         week[weekday].sort(key = lambda event : datetime.fromisoformat(event["start"]["dateTime"]))
@@ -417,7 +406,7 @@ async def parseWeek(week_data):
 \end{lstlisting}
 \newpage
 \subsection{Kreiranje grafa}
-Funkcija, prikazana na Listingu \ref{lst:graph}, prolazi kroz parsiranu sedmicu i broji koliko ima časova po danu, nakon toga generiše graf uz pomoć matplotlib\cite{matplotlib} biblioteke. Povratna vrednost je lokacija sačuvane slike grafa.
+Funkcija, prikazana na Listingu \ref{lst:graph}, prolazi kroz parsiranu sedmicu i broji koliko ima časova po danu, nakon toga generiše graf uz pomoć matplot\cite{matplotlib} biblioteke. Povratna vrednost je lokacija sačuvane slike grafa.
 \begin{lstlisting}[language=Python, caption=Kreiranje grafa, label=lst:graph]
 async def classesPerDayGraph(channel_name, week):
     log.debug("Plotting graph for " + channel_name)
@@ -446,7 +435,7 @@ async def classesPerDayGraph(channel_name, week):
 \end{lstlisting}
 \newpage
 \section{Zaključak}
-Pored toga što je Smerač projekat za uspešno polaganje predmeta Skript jezici, to je i društveno korisna aplikacija koja se koristi na Discord serveru studenata Departmana za matematiku i informatiku. Najpre nudi jednostavan i bezbedan način odabira smera što smanjuje potrebu za ručnim radom neke privilegovane osobe ali i ubrzava čitav proces. Prilikom odabira smera studenti dobijaju pristup isključivo onim kanalima koji su potrebni za taj smer i time se olakšava pregled i upotreba tog Discord servera. Naravno, najkompleksnija funkcionalnost ovog programa jeste parsiranje kalendara, ali nakon što je ta prepreka pređena studentima je dostupan drastično brži i lakši pristup rasporedu predavanja i vežbi.
+Pored toga što je Smerač projekat za uspešno polaganje predmeta Skript jezici, to je i društveno korisna aplikacija koja se koristi na Discord serveru studenata Departmana za matematiku i informatiku. Najpre nudi jednostavan i bezbedan način odabira smera što smanjuje potrebu za ručnim radom neke privilegovane osobe ali i ubrzava čitav proces. Prilikom odabira smera studenti dobijaju pristup isključivo onim kanalima koji su potrebni za taj smer i time se olakšava pregled i upotreba Discord servera. Naravno, najkompleksnija funkcionalnost ovog programa jeste parsiranje kalendara, ali nakon što je ta prepreka pređena studentima je dostupan drastično brži i lakši pristup rasporedu predavanja i vežbi.
 \\\\
 Smerač je takođe slobodnog i otvorenog koda i kao takav može biti uzor drugim aplikacija sličnog tipa, što i jeste slučaj za budući projekat jednog studenta koji planira da integriše Moodle notifikacije vezane za smer i prosledi ih na isti Discord server.
 \newpage
