@@ -238,7 +238,7 @@ Pomoću biblioteke interactions-py moguće je kreirati slash komandu sa nazivom 
 \vfill
 \newpage
 \subsubsection{Dodeljivanje funkcionalnosti slash komandi}
-Da bi kreirana slash komanda izvršavala neki kod potrebno je odmah ispod njene kreacije deklarisati asinhrohu funkciju, prikazanu na Listingu \ref{lst:chooserole}, koja će izvršavati željeni kod.
+Da bi kreirana slash komanda izvršavala neki kod potrebno je odmah ispod njene kreacije deklarisati asinhrohu funkciju, prikazanu na Listingu \ref{lst:chooserole}, koja će izvršavati željeni kod. Ova funkcija prolazi kroz sve smerove autora komande i briše ih a potom dodaje samo željenu.
 \begin{lstlisting}[language=Python, caption=Dodeljivanje funkcionalnosti slash komandi, label=lst:chooserole]
 async def choose_role(ctx: interactions.CommandContext, wanted_role: str):
     author = ctx.author
@@ -275,7 +275,7 @@ Opcija \textit{ephemeral} znači da se poruka šalje samo autoru komande, tj. ko
 \newpage
 \subsection{Kalendar}
 \subsubsection{Instanciranje niti}
-Kako bi se kalendar asinhrono učitavao za svaki od smerova odvojena je funkcija koja pronalazi sve odgovarajuće kanale, prikazana na Listingu \ref{lst:threads}, od funkcije za učitavanje, parsiranje i generisanje kalendara.
+Kako bi se kalendar asinhrono učitavao za svaki od smerova odvojena je funkcija koja pronalazi sve kanale sa nazivom smera u kategoriji \texttt{calendar}, prikazana na Listingu \ref{lst:threads}, od funkcije za učitavanje, parsiranje i generisanje kalendara.
 \begin{lstlisting}[language=Python, caption=Instanciranje niti, label=lst:threads]
 async def calendar(delay):
     log.debug("Calendar")
@@ -297,54 +297,42 @@ async def calendar(delay):
 \end{lstlisting}
 U slučaju da ne postoji URL za kalendar proizvoljnog smera, program beleži to u log i nastavlja da se izvršava.
 \newpage
-\subsubsection{Učitavanje kalendara}
-Glavna funkcija, prikazana na Listingu \ref{lst:update}, koja se bavi pozivom svih pomoćnih za rad sa kalendarom. Učitava JSON objekat sa URL-a i potom generiše narednu sedmicu i parsira je za podatke. Na kraju vrši ispis parsirane sedmice i takođe šalje graf sa brojem časova po danu.
-\begin{lstlisting}[language=Python, caption=Učitavanje kalendara, label=lst:update]
+\subsubsection{Ažuriranje kalendara}
+Glavna funkcija, prikazana na Listingu \ref{lst:update}, se bavi pozivom svih pomoćnih za rad sa kalendarom. Učitava JSON objekat sa URL-a u \texttt{calendar} rečnik, generiše narednu sedmicu u \texttt{week\_data} i parsira je za podatke u \texttt{week}. \texttt{week\_data} i \texttt{week} su rečnici sačinjeni iz polja sa imenima svih dana u sedmici gde je svaki od njih niz događaja tj. predavanja. Na kraju vrši ispis parsirane sedmice, ako se razlikuje od prošle sedmice tj. \texttt{week\_old}, i takođe šalje sliku grafa sa brojem časova po danu.
+\begin{lstlisting}[language=Python, caption=Ažuriranje kalendara, label=lst:update]
 async def updateCalendar(channel, calendar_url, delay):
     log.debug("Updating calendar for " + channel.name)
-
     spacer = "-------------------------"
     week_old = dict()
-
     while True:
         calendar = json.loads(requests.get(calendar_url).text)
-
         week_data = await generateWeek(calendar["items"])
         week = await parseWeek(week_data)
-
         if week_old != week:
             log.debug(str(week_old))
             log.debug("----- week_old != week -----")
             log.debug(str(week))
-
             week_old = week
-
             await channel.purge(8, check=check_pinned)
-
             for weekday in week:
                 if week[weekday] != []:
                     day_output = spacer
                     day_output += "\n\n**" + dayInWeekSrpski(weekday) + ":**\n\n"
-
                     for event in week[weekday]:
                         day_output += "--- " + event["name"] + " ---\n"
-
                         for info in event["info"]:
                             day_output += info["name"] + "\n"
-
                             for i in range(len(info["start_times"])):
                                 day_output += "**" + info["start_times"][i] + "** - " + info["end_times"][i] + "\n"
-
                         day_output += "\n"
                     day_output += spacer
-
                     await channel.send(content=day_output)
             await channel.send(files = await classesPerDayGraph(channel.name, week))
         await asyncio.sleep(delay)
 \end{lstlisting}
 \newpage
 \subsubsection{Generisanje sedmice}
-Funkcija, prikazana na Listingu \ref{lst:generate}, prolazi kroz raspored za celu godinu i uzima sve časove koji se odvijaju u narednih 7 dana a potom ih svrstava po danima i sortira po početnom vremenu odvijanja.
+Funkcija, prikazana na Listingu \ref{lst:generate}, prolazi kroz raspored za celu godinu (JSON objekat) i uzima sve događaje koji se odvijaju u narednih 7 dana. Zatim ih svrstava po danima u rečnik \texttt{week} sačinjenen iz polja sa imenima svih dana u sedmici gde je svaki od njih niz događaja tj. predavanja i sortira događaje po početnom vremenu odvijanja. Na kraju vraća rečnik \texttt{week}.
 \begin{lstlisting}[language=Python, caption=Generisanje sedmice, label=lst:generate]
 async def generateWeek(events):
     log.debug("Generating week")
@@ -364,13 +352,26 @@ async def generateWeek(events):
 \end{lstlisting}
 \newpage
 \subsubsection{Parsiranje sedmice}
-Funkcija, prikazana na Listingu \ref{lst:parse}, prolazi kroz sedmicu i spaja duplikate časova, ali razlikuje ako isti čas drže različiti proferosi ili se odvija na drugom mestu.
+Funkcija, prikazana na Listingu \ref{lst:parse}, prolazi kroz sedmicu i spaja duplikate časova u rečnik \texttt{week} koji je sačinjenen iz polja sa imenima svih dana u sedmici gde je svaki od njih niz događaja tj. predavanja, ali razlikuje ako isti čas drže različiti profesori ili se odvija na drugom mestu.
+\\\\
+Smerač postiže to razlikovanje deljenjem polja \texttt{summary} na \texttt{name} (sve pre prve zapete) tj. naziv događaja i ostatak \texttt{info} koji predstavlja sve informacije o događaju kao što su mesto odvijanja i ime profesora ili asistenta. Nakon te podele briše sve bele praznine (eng. \textit{white spaces}) i proverava da li u parsiranoj sedmici (rečnik \texttt{week}) već postoji događaj sa tim nazivom, ako postoji proverava se da li postoji isti \texttt{info} unutar tog događaja. Ako se naiđe na iste informacije samo se dodaju nova vremena odvijanja (početak i kraj). U slučaju da se ne pronađe već postojeći događaj ili unutar događaja informacije onda se one kreiraju.
+\\\\
+Ovakvim parsiranjem rečnik \texttt{week} ima sledeću strukturu:
+\begin{center}
+\begin{tabular}{|p{1.3cm}|p{1.4cm}|p{1.55cm}|p{2cm}|p{1.9cm}|p{2cm}|p{1.8cm}|}
+    \hline
+    weekday & event & name & info & info name & start\_times & end\_times \\
+    \hline
+    [event] & \{name, info\} & 'string' & \{name, start\_times, end\_times\} & 'string' & ['\%H:\%M'] & ['\%H:\%M'] \\
+    \hline
+\end{tabular}
+\end{center}
+'\%H:\%M' predstavlja string koji je konvertovan iz \texttt{datetime} ISO formata u obliku SAT : MINUT.
+\newpage
 \begin{lstlisting}[language=Python, caption=Parsiranje sedmice, label=lst:parse]
 async def parseWeek(week_data):
     log.debug("Parsing week")
-
     week = {"mon": [], "tue": [], "wed": [], "thu": [], "fri": [], "sat": [], "sun": []}
-
     for weekday in week_data:
         if week_data[weekday] != []:
             for event in week_data[weekday]:
