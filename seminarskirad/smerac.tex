@@ -415,10 +415,12 @@ Ovakvim parsiranjem rečnik \texttt{week} ima sledeću strukturu:
     \hline
     weekday & event & name & info & info name & start\_times & end\_times \\
     \hline
-    [event] & \{name, info\} & 'string' & \{name, start\_times, end\_times\} & 'string' & ['\%H:\%M'] & ['\%H:\%M'] \\
+    [event] & \{name, info\} & \texttt{str} & \{name, start\_times, end\_times\} & \texttt{str} & ['\%H:\%M'] & ['\%H:\%M'] \\
     \hline
 \end{tabular}
 \end{center}
+Reči koje obuhvata [ i ] predstavlja listu tipa te reči, tj. \{ i \} predstavlja objekat sa tim rečima za polja.
+\\
 '\%H:\%M' predstavlja string koji je konvertovan iz ISO formata u obliku SAT:MINUT.
 \newpage
 \subsection{Kreiranje grafa}
