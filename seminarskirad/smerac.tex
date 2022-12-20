@@ -298,7 +298,7 @@ async def calendar(delay):
 U slučaju da ne postoji URL za kalendar proizvoljnog smera, program beleži to u log i nastavlja da se izvršava.
 \newpage
 \subsubsection{Ažuriranje kalendara}
-Glavna funkcija, prikazana na Listingu \ref{lst:update}, se bavi pozivom svih pomoćnih za rad sa kalendarom. Učitava JSON objekat sa URL-a u \texttt{calendar} rečnik, generiše narednu sedmicu u \texttt{week\_data} i parsira je za podatke u \texttt{week}. \texttt{week\_data} i \texttt{week} su rečnici sačinjeni iz polja sa imenima svih dana u sedmici gde je svaki od njih niz događaja tj. predavanja. Na kraju vrši ispis parsirane sedmice, ako se razlikuje od prošle sedmice tj. \texttt{week\_old}, i takođe šalje sliku grafa sa brojem časova po danu.
+Glavna funkcija, prikazana na Listingu \ref{lst:update}, se bavi pozivom svih pomoćnih za rad sa kalendarom. Učitava JSON objekat sa URL-a u \texttt{calendar} rečnik, generiše narednu sedmicu u \texttt{week\_data} i parsira je za podatke u \texttt{week}. \texttt{week\_data} i \texttt{week} su rečnici sačinjeni iz polja sa imenima svih dana u sedmici gde je svaki od njih lista događaja tj. predavanja. Na kraju vrši ispis parsirane sedmice, ako se razlikuje od prošle sedmice tj. \texttt{week\_old}, i takođe šalje sliku grafa sa brojem časova po danu.
 \begin{lstlisting}[language=Python, caption=Ažuriranje kalendara, label=lst:update]
 async def updateCalendar(channel, calendar_url, delay):
     log.debug("Updating calendar for " + channel.name)
@@ -332,7 +332,7 @@ async def updateCalendar(channel, calendar_url, delay):
 \end{lstlisting}
 \newpage
 \subsubsection{Generisanje sedmice}
-Funkcija, prikazana na Listingu \ref{lst:generate}, prolazi kroz raspored za celu godinu (JSON objekat) i uzima sve događaje koji se odvijaju u narednih 7 dana. Zatim ih svrstava po danima u rečnik \texttt{week} sačinjenen iz polja sa imenima svih dana u sedmici gde je svaki od njih niz događaja tj. predavanja i sortira događaje po početnom vremenu odvijanja. Na kraju vraća rečnik \texttt{week}.
+Funkcija, prikazana na Listingu \ref{lst:generate}, prolazi kroz raspored za celu godinu (JSON objekat) i uzima sve događaje koji se odvijaju u narednih 7 dana. Zatim ih svrstava po danima u rečnik \texttt{week} sačinjenen iz polja sa imenima svih dana u sedmici gde je svaki od njih lista događaja tj. predavanja i sortira događaje po početnom vremenu odvijanja. Na kraju vraća rečnik \texttt{week}.
 \begin{lstlisting}[language=Python, caption=Generisanje sedmice, label=lst:generate]
 async def generateWeek(events):
     log.debug("Generating week")
@@ -352,7 +352,7 @@ async def generateWeek(events):
 \end{lstlisting}
 \newpage
 \subsubsection{Parsiranje sedmice}
-Funkcija, prikazana na Listingu \ref{lst:parse}, prolazi kroz sedmicu i spaja duplikate časova u rečnik \texttt{week} koji je sačinjenen iz polja sa imenima svih dana u sedmici gde je svaki od njih niz događaja tj. predavanja, ali razlikuje ako isti čas drže različiti profesori ili se odvija na drugom mestu.
+Funkcija, prikazana na Listingu \ref{lst:parse}, prolazi kroz sedmicu i spaja duplikate časova u rečnik \texttt{week} koji je sačinjenen iz polja sa imenima svih dana u sedmici gde je svaki od njih lista događaja tj. predavanja, ali razlikuje ako isti čas drže različiti profesori ili se odvija na drugom mestu.
 \\\\
 Smerač postiže to razlikovanje deljenjem polja \texttt{summary} na \texttt{name} (sve pre prve zapete) tj. naziv događaja i ostatak \texttt{info} koji predstavlja sve informacije o događaju kao što su mesto odvijanja i ime profesora ili asistenta. Nakon te podele briše sve bele praznine (eng. \textit{white spaces}) i proverava da li u parsiranoj sedmici (rečnik \texttt{week}) već postoji događaj sa tim nazivom, ako postoji proverava se da li postoji isti \texttt{info} unutar tog događaja. Ako se naiđe na iste informacije samo se dodaju nova vremena odvijanja (početak i kraj). U slučaju da se ne pronađe već postojeći događaj ili unutar događaja informacije onda se one kreiraju.
 \\\\
