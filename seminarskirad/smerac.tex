@@ -353,21 +353,6 @@ async def generateWeek(events):
 \newpage
 \subsubsection{Parsiranje sedmice}
 Funkcija, prikazana na Listingu \ref{lst:parse}, prolazi kroz sedmicu i spaja duplikate časova u rečnik \texttt{week} koji je sačinjenen iz polja sa imenima svih dana u sedmici gde je svaki od njih lista događaja tj. predavanja, ali razlikuje ako isti čas drže različiti profesori ili se odvija na drugom mestu.
-\\\\
-Smerač postiže to razlikovanje deljenjem polja \texttt{summary} na \texttt{name} (sve pre prve zapete) tj. naziv događaja i ostatak \texttt{info} koji predstavlja sve informacije o događaju kao što su mesto odvijanja i ime profesora ili asistenta. Nakon te podele briše sve bele praznine (eng. \textit{white spaces}) i proverava da li u parsiranoj sedmici (rečnik \texttt{week}) već postoji događaj sa tim nazivom, ako postoji proverava se da li postoji isti \texttt{info} unutar tog događaja. Ako se naiđe na iste informacije samo se dodaju nova vremena odvijanja (početak i kraj). U slučaju da se ne pronađe već postojeći događaj ili unutar događaja informacije onda se one kreiraju.
-\\\\
-Ovakvim parsiranjem rečnik \texttt{week} ima sledeću strukturu:
-\begin{center}
-\begin{tabular}{|p{1.3cm}|p{1.4cm}|p{1.55cm}|p{2cm}|p{1.9cm}|p{2cm}|p{1.8cm}|}
-    \hline
-    weekday & event & name & info & info name & start\_times & end\_times \\
-    \hline
-    [event] & \{name, info\} & 'string' & \{name, start\_times, end\_times\} & 'string' & ['\%H:\%M'] & ['\%H:\%M'] \\
-    \hline
-\end{tabular}
-\end{center}
-'\%H:\%M' predstavlja string koji je konvertovan iz \texttt{datetime} ISO formata u obliku SAT : MINUT.
-\newpage
 \begin{lstlisting}[language=Python, caption=Parsiranje sedmice, label=lst:parse]
 async def parseWeek(week_data):
     log.debug("Parsing week")
@@ -405,6 +390,36 @@ async def parseWeek(week_data):
                     week[weekday].append(new_event)
     return week
 \end{lstlisting}
+\newpage
+Smerač postiže to razlikovanje deljenjem polja \texttt{summary} na \texttt{name} (sve pre prve zapete) tj. naziv događaja i ostatak \texttt{info} koji predstavlja sve informacije o događaju kao što su mesto odvijanja i ime profesora ili asistenta. Nakon te podele briše sve bele praznine (eng. \textit{white spaces}) i proverava da li u parsiranoj sedmici (rečnik \texttt{week}) već postoji događaj sa tim nazivom, ako postoji proverava se da li postoji isti \texttt{info} unutar tog događaja. Ako se naiđe na iste informacije samo se dodaju nova vremena odvijanja (početak i kraj). U slučaju da se ne pronađe već postojeći događaj ili unutar događaja \texttt{info} onda se takav objekat kreira, što je prikazano na Listingu \ref{lst:parseCreate}.
+\begin{lstlisting}[language=Python, caption=Parsiranje sedmice, label=lst:parseCreate]
+                            if not foundInfo:
+                                new_info = {"name": info, "start_times": [], "end_times": []}
+                                new_info["start_times"].append(start_time)
+                                new_info["end_times"].append(end_time)
+                                event_old["info"].append(new_info)
+                            foundEvent = True
+                            break
+                if not foundEvent:
+                    new_event = {"name": name, "info": []}
+                    new_info = {"name": info, "start_times": [], "end_times": []}
+                    new_info["start_times"].append(start_time)
+                    new_info["end_times"].append(end_time)
+                    new_event["info"].append(new_info)
+                    week[weekday].append(new_event)
+    return week
+\end{lstlisting}
+Ovakvim parsiranjem rečnik \texttt{week} ima sledeću strukturu:
+\begin{center}
+\begin{tabular}{|p{1.3cm}|p{1.4cm}|p{1.55cm}|p{2cm}|p{1.9cm}|p{2cm}|p{1.8cm}|}
+    \hline
+    weekday & event & name & info & info name & start\_times & end\_times \\
+    \hline
+    [event] & \{name, info\} & 'string' & \{name, start\_times, end\_times\} & 'string' & ['\%H:\%M'] & ['\%H:\%M'] \\
+    \hline
+\end{tabular}
+\end{center}
+'\%H:\%M' predstavlja string koji je konvertovan iz ISO formata u obliku SAT:MINUT.
 \newpage
 \subsection{Kreiranje grafa}
 Funkcija, prikazana na Listingu \ref{lst:graph}, prolazi kroz parsiranu sedmicu i broji koliko ima časova po danu, nakon toga generiše graf uz pomoć matplot\cite{matplotlib} biblioteke. Povratna vrednost je lokacija sačuvane slike grafa.
